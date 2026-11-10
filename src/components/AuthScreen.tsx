@@ -81,8 +81,8 @@ export default function AuthScreen({onAuthenticated, initialError}: Props) {
                                 <span className="portal-field-icon" aria-hidden="true"><EmailIcon size={18}/></span>
                                 <div className="portal-input-wrap">
                                     <label htmlFor="pilot-email">EMAIL ПИЛОТА</label>
-                                    <input id="pilot-email" name="email" type="email" required maxLength={254}
-                                           autoComplete="email" value={email}
+                                    <input id="pilot-email" name="username" type="email" required maxLength={254}
+                                           autoComplete="username" value={email}
                                            onChange={(event) => setEmail(event.target.value)}
                                            placeholder="pilot@galaxy.space"/>
                                 </div>
