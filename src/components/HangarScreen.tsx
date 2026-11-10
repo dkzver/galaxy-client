@@ -766,6 +766,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
 
     // Переключение типа каталога сбрасывает выбранную подкатегорию и товар.
     function selectTab(tab: CatalogTab) {
+        setShowShipsForSale(false);
         setActiveTab(tab);
         setActiveCategory(null);
         setSelectedItemId(null);
@@ -778,6 +779,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
         const compatibleGoods = catalog.equipments.filter((item) => item.slotId === slotTypeId);
         const firstCompatible = compatibleGoods[0];
 
+        setShowShipsForSale(false);
         if (slotRowId != null) {
             setSelectedSlotRowId(Number(slotRowId));
         }
@@ -874,7 +876,10 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                     ) : (
                                         <>
                                             <button className={`tab catalog-category${activeCategory === null ? ' active' : ''}`}
-                                                    type="button" onClick={() => setActiveCategory(null)}>
+                                                    type="button" onClick={() => {
+                                                        setShowShipsForSale(false);
+                                                        setActiveCategory(null);
+                                                    }}>
                                                 Все
                                             </button>
                                             {categories.map((category) => {
@@ -885,6 +890,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                                         className={`tab catalog-category${activeCategory === category.id ? ' active' : ''}`}
                                                         key={category.id} type="button"
                                                         onClick={() => {
+                                                            setShowShipsForSale(false);
                                                             setActiveCategory(category.id);
                                                             setSelectedItemId(null);
                                                         }}
@@ -930,6 +936,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                             <button className={`item-row${selectedItem?.id === item.id ? ' selected' : ''}`}
                                                     key={item.id} type="button"
                                                     onClick={() => {
+                                                        setShowShipsForSale(false);
                                                         setSelectedSlotRowId(0);
                                                         setSelectedItemId(item.id);
                                                     }}>
