@@ -2,6 +2,7 @@
 import {useEffect, useId, useLayoutEffect, useRef, useState} from 'react';
 import type {CSSProperties, ReactNode} from 'react';
 import {createPortal} from 'react-dom';
+import {executeTrade} from '../api';
 import type {HangarShip, HangarShipHold, HangarShipSlot, HangarStatus, TradeActionType} from '../types';
 import catalog from '../data/galaxy-admin-data.json';
 
@@ -51,6 +52,7 @@ type HoveredTooltip =
     | {kind: 'hold-item'; holdIndex: number; itemIndex: number; target: HTMLButtonElement};
 
 interface Props {
+    token: string;
     hangar: HangarStatus | null;
     error: string;
     email: string;
@@ -485,7 +487,7 @@ function ShipInformation({
     );
 }
 
-export default function HangarScreen({hangar, error, email, onLaunch, onLogout, onDeleteAccount}: Props) {
+export default function HangarScreen({token, hangar, error, email, onLaunch, onLogout, onDeleteAccount}: Props) {
     const [activeTab, setActiveTab] = useState<CatalogTab>('all');
     const [activeCategory, setActiveCategory] = useState<number | null>(null);
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
@@ -552,12 +554,18 @@ export default function HangarScreen({hangar, error, email, onLaunch, onLogout, 
         }
     }, [showShipsForSale, selectedForSaleShip, selectedItem, activeTab, hangar]);
 
-    function handleTradeButtonClick() {
+    async function handleTradeButtonClick() {
         if (!isActionTriggered || !tradeAction) {
             console.warn('Действие заблокировано: триггер не установлен');
             return;
         }
-        console.log(`Выполнение действия: ${tradeAction}`);
+        try {
+            const payload = showShipsForSale && selectedForSaleShip ? {shipModelId: selectedForSaleShip.id} : {};
+            const response = await executeTrade(token, tradeAction, payload);
+            console.log('[CLIENT TRADE RESPONSE]', response);
+        } catch (cause) {
+            console.error('Ошибка выполнения торгового действия:', cause);
+        }
     }
     const ownedShips: DockShip[] = userShips.length
         ? userShips.map((ship) => ({

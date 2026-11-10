@@ -58,7 +58,7 @@ export default function App() {
         return <AuthScreen onAuthenticated={onAuthenticated} initialError={error}/>;
     }
     if (screen === 'hangar') {
-        return <HangarScreen hangar={hangar} error={error} email={email} onLaunch={() => {
+        return <HangarScreen token={token} hangar={hangar} error={error} email={email} onLaunch={() => {
             setZone('galaxy-map');
             setScreen('space');
         }} onLogout={logout} onDeleteAccount={removeAccount}/>;

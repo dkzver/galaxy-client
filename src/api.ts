@@ -1,5 +1,5 @@
 ﻿// Небольшой типизированный клиент REST API с единообразной обработкой ошибок.
-import type {AuthResponse, HangarStatus} from './types';
+import type {AuthResponse, HangarStatus, TradeActionType} from './types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005';
 
@@ -29,6 +29,14 @@ export function authenticate(mode: 'login' | 'register', email: string, password
 
 export function fetchHangar(token: string) {
     return request<HangarStatus>('/api/hangar/status', {}, token);
+}
+
+// Отправляет торговое действие на сервер.
+export function executeTrade(token: string, action: TradeActionType, payload: Record<string, unknown> = {}) {
+    return request<{success: boolean; email: string; action: TradeActionType}>('/api/hangar/trade', {
+        method: 'POST',
+        body: JSON.stringify({action, ...payload}),
+    }, token);
 }
 
 // Удаляет авторизованный аккаунт и его данные на сервере.
