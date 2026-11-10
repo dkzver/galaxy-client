@@ -549,15 +549,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                 setTradeAction(null);
                 setIsActionTriggered(false);
             }
-        } else if (!showShipsForSale && userShips.length > 0) {
-            if (userShips.length > 1) {
-                setTradeAction('sell_ship');
-                setIsActionTriggered(true);
-            } else {
-                setTradeAction(null);
-                setIsActionTriggered(false);
-            }
-        } else if (selectedItem) {
+        } else if (selectedItem != null) {
             const itemPrice = Number(selectedItem.price_buy || 0);
             const userCredits = hangar ? Number(hangar.credits || 0) : 0;
             const isEquipment = catalog.equipments.some((entry) => entry.id === selectedItem.id);
@@ -592,11 +584,19 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                     setIsActionTriggered(false);
                 }
             }
+        } else if (!showShipsForSale && userShips.length > 0 && selectedSlotRowId === 0) {
+            if (userShips.length > 1) {
+                setTradeAction('sell_ship');
+                setIsActionTriggered(true);
+            } else {
+                setTradeAction(null);
+                setIsActionTriggered(false);
+            }
         } else {
             setTradeAction(null);
             setIsActionTriggered(false);
         }
-    }, [showShipsForSale, selectedForSaleShip, selectedItem, activeTab, hangar, userShips]);
+    }, [showShipsForSale, selectedForSaleShip, selectedItemId, selectedItem, activeTab, hangar, userShips, selectedSlotRowId]);
 
     async function handleTradeButtonClick() {
         if (!isActionTriggered || !tradeAction || isTradeProcessing) {
