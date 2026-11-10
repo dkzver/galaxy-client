@@ -787,30 +787,46 @@ export default function HangarScreen({hangar, error, email, onLaunch, onLogout, 
 
                         <section className="inventory-panel shop-panel panel-block glass selection-column">
                             <div className="ship-panel-body shop-panel-body panel-body">
-                                {showShipsForSale && selectedForSaleShip ? (
-                                    <>
-                                        <ShipInformation
-                                            name={selectedForSaleShip.name}
-                                            meta={`Корпус #${selectedForSaleShip.id} · доступен для покупки`}
-                                            model={selectedForSaleShip}
-                                            onOpenSlot={openCompatibleGoods}
-                                        />
-                                        <div className="ship-rows shop-price-rows">
-                                            <div className="ship-row">
-                                                <span>Цена покупки</span>
-                                                <b>{formatNumber(selectedForSaleShip.price_buy)} <small>¤</small></b>
+                                {showShipsForSale && selectedForSaleShip ? (() => {
+                                    const shipPrice = Number(selectedForSaleShip.price_buy || 0);
+                                    const userCredits = hangar ? Number(hangar.credits || 0) : 0;
+                                    const canAffordShip = hangar != null && userCredits >= shipPrice;
+
+                                    return (
+                                        <>
+                                            <ShipInformation
+                                                name={selectedForSaleShip.name}
+                                                meta={`Корпус #${selectedForSaleShip.id} · доступен для покупки`}
+                                                model={selectedForSaleShip}
+                                                onOpenSlot={openCompatibleGoods}
+                                            />
+                                            <div className="ship-rows shop-price-rows">
+                                                <div className="ship-row">
+                                                    <span>Цена покупки</span>
+                                                    <b>{formatNumber(selectedForSaleShip.price_buy)} <small>¤</small></b>
+                                                </div>
+                                                <div className="ship-row">
+                                                    <span>Цена продажи</span>
+                                                    <b>{formatNumber(selectedForSaleShip.price_sale)} <small>¤</small></b>
+                                                </div>
                                             </div>
-                                            <div className="ship-row">
-                                                <span>Цена продажи</span>
-                                                <b>{formatNumber(selectedForSaleShip.price_sale)} <small>¤</small></b>
+                                            <p className="shop-note">
+                                                {canAffordShip
+                                                    ? `Ваш баланс: ${formatNumber(userCredits)} ¤. Достаточно средств.`
+                                                    : `Недостаточно кредитов. Требуется ${formatNumber(shipPrice)} ¤ (у вас ${formatNumber(userCredits)} ¤).`}
+                                            </p>
+                                            <div className="shop-actions">
+                                                <BuyButton
+                                                    type="button"
+                                                    disabled={!canAffordShip}
+                                                    title={canAffordShip
+                                                        ? `Купить ${selectedForSaleShip.name} за ${formatNumber(shipPrice)} ¤`
+                                                        : `Недостаточно кредитов для покупки (требуется ${formatNumber(shipPrice)} ¤)`}
+                                                />
                                             </div>
-                                        </div>
-                                        <p className="shop-note">Просмотр каталога доступен. Покупка пока не поддерживается сервером.</p>
-                                        <div className="shop-actions">
-                                            <BuyButton type="button" disabled title="На сервере ещё нет API торговли"/>
-                                        </div>
-                                    </>
-                                ) : selectedItem ? (
+                                        </>
+                                    );
+                                })() : selectedItem ? (
                                     <>
                                         <span className="ship-sub">
                                             {selectedItemCategory?.name || tabLabels[selectedItemTab]}
