@@ -6,7 +6,7 @@ import {executeTrade} from '../api';
 import type {HangarShip, HangarShipHold, HangarShipSlot, HangarStatus, TradeActionType} from '../types';
 import catalog from '../data/galaxy-admin-data.json';
 
-import {BuyButton} from './TradeButtons';
+import {BuyButton, SellButton} from './TradeButtons';
 import './hangar-reference.css';
 
 type CatalogItem = {
@@ -166,14 +166,14 @@ function ShipInformation({
     shipSlots?: HangarShipSlot[];
     shipHolds?: HangarShipHold[];
     rows?: Array<{label: string; value: string}>;
-    onOpenSlot?: (slotId: number) => void;
+    onOpenSlot?: (slotTypeId: number, slotRowId?: number, slotEquipmentId?: number | null) => void;
 }) {
     const [hoveredTooltip, setHoveredTooltip] = useState<HoveredTooltip | null>(null);
     const tooltipId = useId();
     const tooltipRef = useRef<HTMLDivElement>(null);
     const slotViews = shipSlots
-        ? shipSlots.map((slot) => ({slotId: slot.slot_id, equipmentId: slot.equipment_id}))
-        : model?.slots.map((slot) => ({slotId: slot.slotId, equipmentId: slot.itemId || null}));
+        ? shipSlots.map((slot) => ({id: slot.id, slotId: slot.slot_id, equipmentId: slot.equipment_id}))
+        : model?.slots.map((slot, index) => ({id: index, slotId: slot.slotId, equipmentId: slot.itemId || null}));
     const holdViews = shipHolds
         ? shipHolds.map((hold) => ({
             id: hold.id,
@@ -416,7 +416,7 @@ function ShipInformation({
                                 onFocus={(event) => showSlotTooltip(event.currentTarget, index)}
                                 onBlur={() => setHoveredTooltip(null)}
                                 onClick={() => {
-                                    if (isEmpty && compatibleGoods.length > 0) onOpenSlot?.(slot.slotId);
+                                    onOpenSlot?.(slot.slotId, Number(slot.id), slot.equipmentId);
                                 }}
                             >
                                 {installedItem
@@ -501,6 +501,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
     const [tradeAction, setTradeAction] = useState<TradeActionType | null>(null);
     const [isActionTriggered, setIsActionTriggered] = useState(false);
     const [isTradeProcessing, setIsTradeProcessing] = useState(false);
+    const [selectedSlotRowId, setSelectedSlotRowId] = useState<number>(0);
     const shipListRef = useRef<HTMLDivElement>(null);
     const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
     const [deletingAccount, setDeletingAccount] = useState(false);
@@ -729,15 +730,39 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
         setActiveCategory(null);
         setSelectedItemId(null);
         setSelectedSlotId(null);
+        setSelectedSlotRowId(0);
     }
 
-    // Показывает в торговом списке только оборудование, подходящее выбранному слоту.
-    function openCompatibleGoods(slotId: number) {
-        const compatibleGoods = catalog.equipments.filter((item) => item.slotId === slotId);
+    // Показывает в торговом списке только оборудование, подходящее выбранному слоту, и подсвечивает категорию.
+    function openCompatibleGoods(slotTypeId: number, slotRowId?: number) {
+        const compatibleGoods = catalog.equipments.filter((item) => item.slotId === slotTypeId);
+        const firstCompatible = compatibleGoods[0];
+
+        if (slotRowId != null) {
+            setSelectedSlotRowId(Number(slotRowId));
+        }
         setActiveTab('equipment');
-        setActiveCategory(null);
-        setSelectedSlotId(slotId);
-        setSelectedItemId(compatibleGoods[0]?.id ?? null);
+        setActiveCategory(firstCompatible?.categoryId ?? null);
+        setSelectedSlotId(slotTypeId);
+        setSelectedItemId(firstCompatible?.id ?? null);
+    }
+
+    function handleSlotSelect(slotTypeId: number, slotRowId?: number, slotEquipmentId?: number | null) {
+        if (slotRowId != null) {
+            setSelectedSlotRowId(Number(slotRowId));
+        }
+        if (slotEquipmentId != null) {
+            const installedItem = catalog.equipments.find((item) => item.id === slotEquipmentId);
+            setShowShipsForSale(false);
+            setSelectedSlotId(slotTypeId);
+            setSelectedItemId(slotEquipmentId);
+            setActiveTab('equipment');
+            setActiveCategory(installedItem?.categoryId ?? null);
+            setTradeAction('sell_equipment');
+            setIsActionTriggered(true);
+        } else {
+            openCompatibleGoods(slotTypeId, slotRowId);
+        }
     }
 
     // Ошибка удаления остаётся в диалоге, чтобы пользователь мог повторить запрос.
@@ -847,7 +872,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                     shipSlots={ownedShip?.slots}
                                     shipHolds={ownedShip?.holds}
                                     rows={ownedShipRows}
-                                    onOpenSlot={openCompatibleGoods}
+                                    onOpenSlot={handleSlotSelect}
                                 />
                                 {error && <p className="error-message" role="alert">{error}</p>}
                             </div>
@@ -864,7 +889,10 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                         {group.items.map((item) => (
                                             <button className={`item-row${selectedItem?.id === item.id ? ' selected' : ''}`}
                                                     key={item.id} type="button"
-                                                    onClick={() => setSelectedItemId(item.id)}>
+                                                    onClick={() => {
+                                                        setSelectedSlotRowId(0);
+                                                        setSelectedItemId(item.id);
+                                                    }}>
                                                 <span className={`item-icon ${item.icon || ''}`}>
                                                     <HangarIcon name={item.icon} size={22}/>
                                                 </span>
@@ -908,7 +936,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                                 name={selectedForSaleShip.name}
                                                 meta={`Корпус #${selectedForSaleShip.id} · доступен для покупки`}
                                                 model={selectedForSaleShip}
-                                                onOpenSlot={openCompatibleGoods}
+                                                onOpenSlot={handleSlotSelect}
                                             />
                                             <div className="ship-rows shop-price-rows">
                                                 <div className="ship-row">
@@ -978,18 +1006,29 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                         </div>
                                         <p className="shop-note">
                                             {isActionTriggered
-                                                ? `Ваш баланс: ${formatNumber(hangar?.credits)} ¤. Нажмите для покупки.`
+                                                ? `Ваш баланс: ${formatNumber(hangar?.credits)} ¤. ${tradeAction === 'sell_equipment' ? 'Нажмите для продажи.' : 'Нажмите для покупки.'}`
                                                 : `Выберите предмет или проверьте баланс кредитов.`}
                                         </p>
                                         <div className="shop-actions">
-                                            <BuyButton
-                                                type="button"
-                                                disabled={!isActionTriggered}
-                                                onClick={handleTradeButtonClick}
-                                                title={isActionTriggered
-                                                    ? `Купить ${selectedItem.name} за ${formatNumber(selectedItem.price_buy)} ¤`
-                                                    : `Покупка недоступна`}
-                                            />
+                                            {tradeAction === 'sell_equipment' || selectedSlotRowId !== 0 ? (
+                                                <SellButton
+                                                    type="button"
+                                                    disabled={!isActionTriggered || isTradeProcessing}
+                                                    onClick={handleTradeButtonClick}
+                                                    title={isActionTriggered
+                                                        ? `Продать ${selectedItem.name} из слота #${selectedSlotRowId}`
+                                                        : `Продажа недоступна`}
+                                                />
+                                            ) : (
+                                                <BuyButton
+                                                    type="button"
+                                                    disabled={!isActionTriggered || isTradeProcessing}
+                                                    onClick={handleTradeButtonClick}
+                                                    title={isActionTriggered
+                                                        ? `Купить ${selectedItem.name} за ${formatNumber(selectedItem.price_buy)} ¤`
+                                                        : `Покупка недоступна`}
+                                                />
+                                            )}
                                         </div>
                                     </>
                                 ) : (
