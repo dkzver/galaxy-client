@@ -535,7 +535,9 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
         (activeCategory === null || item.categoryId === activeCategory)
         && (selectedSlotId === null || item.slotId === selectedSlotId),
     );
-    const selectedItem = visibleItems.find((item) => item.id === selectedItemId) || visibleItems[0] || null;
+    const selectedItem = selectedItemId !== null
+        ? (catalogItems[activeTab].find((item) => item.id === selectedItemId) || null)
+        : null;
     const selectedForSaleShip = catalog.ships.find((ship) => ship.id === selectedForSaleShipId) || null;
 
     useEffect(() => {
@@ -1151,6 +1153,8 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                             : String(ownedShip?.id ?? hangar?.ship_id) === String(ship.id)}
                                         onClick={() => {
                                             setSelectedSlotRowId(0);
+                                            setSelectedItemId(null);
+                                            setSelectedSlotId(null);
                                             if (ship.isForSale) {
                                                 setSelectedForSaleShipId(Number(ship.id));
                                             } else {
