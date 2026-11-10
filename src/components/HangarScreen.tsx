@@ -538,6 +538,14 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                 setTradeAction(null);
                 setIsActionTriggered(false);
             }
+        } else if (!showShipsForSale && userShips.length > 0) {
+            if (userShips.length > 1) {
+                setTradeAction('sell_ship');
+                setIsActionTriggered(true);
+            } else {
+                setTradeAction(null);
+                setIsActionTriggered(false);
+            }
         } else if (selectedItem) {
             const itemPrice = Number(selectedItem.price_buy || 0);
             const userCredits = hangar ? Number(hangar.credits || 0) : 0;
@@ -577,7 +585,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
             setTradeAction(null);
             setIsActionTriggered(false);
         }
-    }, [showShipsForSale, selectedForSaleShip, selectedItem, activeTab, hangar]);
+    }, [showShipsForSale, selectedForSaleShip, selectedItem, activeTab, hangar, userShips]);
 
     async function handleTradeButtonClick() {
         if (!isActionTriggered || !tradeAction || isTradeProcessing) {
@@ -586,16 +594,23 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
         }
 
         let optimisticPrice = 0;
+        let isSale = false;
+
         if (tradeAction === 'buy_ship' && selectedForSaleShip) {
             optimisticPrice = Number(selectedForSaleShip.price_buy || 0);
+        } else if (tradeAction === 'sell_ship' && ownedShipModel) {
+            optimisticPrice = Number(ownedShipModel.price_sale || 0);
+            isSale = true;
         } else if (selectedItem) {
             optimisticPrice = Number(selectedItem.price_buy || 0);
         }
 
         if (optimisticPrice > 0 && hangar && onHangarUpdate) {
+            const currentCreds = Number(hangar.credits || 0);
+            const newCreds = isSale ? currentCreds + optimisticPrice : Math.max(0, currentCreds - optimisticPrice);
             onHangarUpdate({
                 ...hangar,
-                credits: Math.max(0, Number(hangar.credits || 0) - optimisticPrice),
+                credits: newCreds,
             });
         }
 
@@ -604,6 +619,8 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
             let payload: Record<string, unknown> = {};
             if (tradeAction === 'buy_ship' && selectedForSaleShip) {
                 payload = {shipModelId: selectedForSaleShip.id};
+            } else if (tradeAction === 'sell_ship' && ownedShip) {
+                payload = {userShipId: ownedShip.id};
             } else if (tradeAction === 'buy_equipment' && selectedItem) {
                 payload = {equipmentModelId: selectedItem.id};
             }
@@ -617,13 +634,20 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
             if (response.boughtShip) {
                 setSelectedOwnedShipId(response.boughtShip.id);
                 setShowShipsForSale(false);
+            } else if (tradeAction === 'sell_ship') {
+                const remaining = response.hangar?.ships?.find((s) => String(s.id) !== String(ownedShip?.id));
+                if (remaining) {
+                    setSelectedOwnedShipId(remaining.id);
+                }
             }
         } catch (cause) {
             console.error('Ошибка выполнения торгового действия:', cause);
             if (optimisticPrice > 0 && hangar && onHangarUpdate) {
+                const currentCreds = Number(hangar.credits || 0);
+                const restoredCreds = isSale ? Math.max(0, currentCreds - optimisticPrice) : currentCreds + optimisticPrice;
                 onHangarUpdate({
                     ...hangar,
-                    credits: Number(hangar.credits || 0) + optimisticPrice,
+                    credits: restoredCreds,
                 });
             }
         } finally {
@@ -1071,8 +1095,13 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                             ? undefined
                                             : String(ownedShip?.id ?? hangar?.ship_id) === String(ship.id)}
                                         onClick={() => {
-                                            if (ship.isForSale) setSelectedForSaleShipId(Number(ship.id));
-                                            else setSelectedOwnedShipId(ship.id);
+                                            setSelectedSlotRowId(0);
+                                            if (ship.isForSale) {
+                                                setSelectedForSaleShipId(Number(ship.id));
+                                            } else {
+                                                console.log('[USER SHIP CLICKED]', ship.id);
+                                                setSelectedOwnedShipId(ship.id);
+                                            }
                                         }}
                                     >
                                         <div className="ship-visual">
