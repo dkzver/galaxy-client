@@ -540,15 +540,37 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
         } else if (selectedItem) {
             const itemPrice = Number(selectedItem.price_buy || 0);
             const userCredits = hangar ? Number(hangar.credits || 0) : 0;
-            const isEquipment = activeTab === 'equipment' || ('slotId' in selectedItem && selectedItem.slotId !== undefined);
-            const actionType: TradeActionType = isEquipment ? 'buy_equipment' : 'buy_resource';
+            const isEquipment = catalog.equipments.some((entry) => entry.id === selectedItem.id);
 
-            if (hangar != null && itemPrice > 0 && userCredits >= itemPrice) {
-                setTradeAction(actionType);
-                setIsActionTriggered(true);
+            if (isEquipment) {
+                const activeShip = hangar?.ships?.[0];
+                const massPropId = catalog.settings.id_propert_mass_value;
+                const equipmentMass = Number(getCatalogPropertyValue(selectedItem, massPropId) || 0);
+
+                const hasFreeSlot = activeShip?.slots?.some(
+                    (s) => Number(s.slot_id) === Number(selectedItem.slotId) && s.equipment_id == null
+                );
+                const hasFreeHold = activeShip?.holds?.some(
+                    (h) => (Number(h.capacity_mass || 0) - Number(h.occupied_mass || 0)) >= equipmentMass
+                );
+
+                const canPlace = Boolean(hasFreeSlot || hasFreeHold);
+
+                if (hangar != null && itemPrice > 0 && userCredits >= itemPrice && canPlace) {
+                    setTradeAction('buy_equipment');
+                    setIsActionTriggered(true);
+                } else {
+                    setTradeAction(null);
+                    setIsActionTriggered(false);
+                }
             } else {
-                setTradeAction(null);
-                setIsActionTriggered(false);
+                if (hangar != null && itemPrice > 0 && userCredits >= itemPrice) {
+                    setTradeAction('buy_resource');
+                    setIsActionTriggered(true);
+                } else {
+                    setTradeAction(null);
+                    setIsActionTriggered(false);
+                }
             }
         } else {
             setTradeAction(null);
@@ -578,7 +600,13 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
 
         setIsTradeProcessing(true);
         try {
-            const payload = showShipsForSale && selectedForSaleShip ? {shipModelId: selectedForSaleShip.id} : {};
+            let payload: Record<string, unknown> = {};
+            if (tradeAction === 'buy_ship' && selectedForSaleShip) {
+                payload = {shipModelId: selectedForSaleShip.id};
+            } else if (tradeAction === 'buy_equipment' && selectedItem) {
+                payload = {equipmentModelId: selectedItem.id};
+            }
+
             const response = await executeTrade(token, tradeAction, payload);
             console.log('[CLIENT TRADE RESPONSE]', response);
 
