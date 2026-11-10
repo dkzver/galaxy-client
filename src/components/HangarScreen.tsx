@@ -54,6 +54,7 @@ type HoveredTooltip =
 interface Props {
     token: string;
     hangar: HangarStatus | null;
+    onHangarUpdate?: (hangar: HangarStatus) => void;
     error: string;
     email: string;
     onLaunch: () => void;
@@ -487,7 +488,7 @@ function ShipInformation({
     );
 }
 
-export default function HangarScreen({token, hangar, error, email, onLaunch, onLogout, onDeleteAccount}: Props) {
+export default function HangarScreen({token, hangar, onHangarUpdate, error, email, onLaunch, onLogout, onDeleteAccount}: Props) {
     const [activeTab, setActiveTab] = useState<CatalogTab>('all');
     const [activeCategory, setActiveCategory] = useState<number | null>(null);
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
@@ -499,6 +500,7 @@ export default function HangarScreen({token, hangar, error, email, onLaunch, onL
     const [selectedOwnedShipId, setSelectedOwnedShipId] = useState<string | number | null>(null);
     const [tradeAction, setTradeAction] = useState<TradeActionType | null>(null);
     const [isActionTriggered, setIsActionTriggered] = useState(false);
+    const [isTradeProcessing, setIsTradeProcessing] = useState(false);
     const shipListRef = useRef<HTMLDivElement>(null);
     const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
     const [deletingAccount, setDeletingAccount] = useState(false);
@@ -555,16 +557,48 @@ export default function HangarScreen({token, hangar, error, email, onLaunch, onL
     }, [showShipsForSale, selectedForSaleShip, selectedItem, activeTab, hangar]);
 
     async function handleTradeButtonClick() {
-        if (!isActionTriggered || !tradeAction) {
-            console.warn('Действие заблокировано: триггер не установлен');
+        if (!isActionTriggered || !tradeAction || isTradeProcessing) {
+            console.warn('Действие заблокировано: триггер не установлен или выполняет обработку');
             return;
         }
+
+        let optimisticPrice = 0;
+        if (tradeAction === 'buy_ship' && selectedForSaleShip) {
+            optimisticPrice = Number(selectedForSaleShip.price_buy || 0);
+        } else if (selectedItem) {
+            optimisticPrice = Number(selectedItem.price_buy || 0);
+        }
+
+        if (optimisticPrice > 0 && hangar && onHangarUpdate) {
+            onHangarUpdate({
+                ...hangar,
+                credits: Math.max(0, Number(hangar.credits || 0) - optimisticPrice),
+            });
+        }
+
+        setIsTradeProcessing(true);
         try {
             const payload = showShipsForSale && selectedForSaleShip ? {shipModelId: selectedForSaleShip.id} : {};
             const response = await executeTrade(token, tradeAction, payload);
             console.log('[CLIENT TRADE RESPONSE]', response);
+
+            if (response.hangar && onHangarUpdate) {
+                onHangarUpdate(response.hangar);
+            }
+            if (response.boughtShip) {
+                setSelectedOwnedShipId(response.boughtShip.id);
+                setShowShipsForSale(false);
+            }
         } catch (cause) {
             console.error('Ошибка выполнения торгового действия:', cause);
+            if (optimisticPrice > 0 && hangar && onHangarUpdate) {
+                onHangarUpdate({
+                    ...hangar,
+                    credits: Number(hangar.credits || 0) + optimisticPrice,
+                });
+            }
+        } finally {
+            setIsTradeProcessing(false);
         }
     }
     const ownedShips: DockShip[] = userShips.length
@@ -866,9 +900,11 @@ export default function HangarScreen({token, hangar, error, email, onLaunch, onL
                                             <div className="shop-actions">
                                                 <BuyButton
                                                     type="button"
-                                                    disabled={!isActionTriggered || !canAffordShip}
+                                                    disabled={!isActionTriggered || !canAffordShip || isTradeProcessing}
                                                     onClick={handleTradeButtonClick}
-                                                    title={canAffordShip
+                                                    title={isTradeProcessing
+                                                        ? 'Выполняется обработка...'
+                                                        : canAffordShip
                                                         ? `Купить ${selectedForSaleShip.name} за ${formatNumber(shipPrice)} ¤`
                                                         : `Недостаточно кредитов для покупки (требуется ${formatNumber(shipPrice)} ¤)`}
                                                 />
