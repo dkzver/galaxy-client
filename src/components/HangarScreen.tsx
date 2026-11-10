@@ -80,6 +80,17 @@ const tabLabels: Record<CatalogTab, string> = {
     resources: 'РЕСУРСЫ',
 };
 
+const tradeActionLabels: Record<TradeActionType, string> = {
+    buy_ship: 'Купить корабль',
+    buy_equipment: 'Купить оборудование',
+    buy_resource: 'Купить ресурс',
+    sell_ship: 'Продать корабль',
+    sell_equipment: 'Продать оборудование',
+    sell_resource: 'Продать ресурс',
+    install_equipment: 'Установить оборудование',
+    uninstall_equipment: 'Снять оборудование',
+};
+
 const iconShapes: Record<string, ReactNode> = {
     ship: <><path d="m12 3 5 7-1 8-4-2-4 2-1-8 5-7Z"/><path d="M10 12h4M12 3v7"/></>,
     chevron: <path d="m9 18 6-6-6-6"/>,
@@ -980,6 +991,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                             <div className="shop-actions">
                                                 <BuyButton
                                                     type="button"
+                                                    label={tradeAction ? tradeActionLabels[tradeAction] : 'Купить корабль'}
                                                     disabled={!isActionTriggered || !canAffordShip || isTradeProcessing}
                                                     onClick={handleTradeButtonClick}
                                                     title={isTradeProcessing
@@ -1020,6 +1032,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                             <div className="shop-actions">
                                                 <SellButton
                                                     type="button"
+                                                    label={tradeAction ? tradeActionLabels[tradeAction] : 'Продать корабль'}
                                                     disabled={!canSellShip || isTradeProcessing}
                                                     onClick={handleTradeButtonClick}
                                                     title={isTradeProcessing
@@ -1077,6 +1090,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                             {tradeAction === 'sell_equipment' || selectedSlotRowId !== 0 ? (
                                                 <SellButton
                                                     type="button"
+                                                    label={tradeAction ? tradeActionLabels[tradeAction] : 'Продать оборудование'}
                                                     disabled={!isActionTriggered || isTradeProcessing}
                                                     onClick={handleTradeButtonClick}
                                                     title={isActionTriggered
@@ -1086,6 +1100,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                             ) : (
                                                 <BuyButton
                                                     type="button"
+                                                    label={tradeAction ? tradeActionLabels[tradeAction] : 'Купить'}
                                                     disabled={!isActionTriggered || isTradeProcessing}
                                                     onClick={handleTradeButtonClick}
                                                     title={isActionTriggered

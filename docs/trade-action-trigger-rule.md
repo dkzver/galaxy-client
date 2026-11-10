@@ -3,15 +3,36 @@
 ## Описание архитектурного правила
 Все операции покупки, продажи и взаимодействия со слотами/оборудованием в интерфейсе Ангара обязаны работать строго через единую систему флагов и типов действий (`TradeActionType` и `isActionTriggered`).
 
-### Возможные типы действий (`TradeActionType`):
-* `buy_ship` — Купить корабль
-* `buy_equipment` — Купить оборудование
-* `buy_resource` — Купить ресурс
-* `sell_ship` — Продать корабль
-* `sell_equipment` — Продать оборудование
-* `sell_resource` — Продать ресурс
-* `install_equipment` — Установить оборудование
-* `uninstall_equipment` — Снять оборудование
+### Возможные типы действий и их тексты на кнопках:
+* `buy_ship` — **«Купить корабль»** (Шаблон `BuyButton`)
+* `buy_equipment` — **«Купить оборудование»** (Шаблон `BuyButton`)
+* `buy_resource` — **«Купить ресурс»** (Шаблон `BuyButton`)
+* `sell_ship` — **«Продать корабль»** (Шаблон `SellButton`)
+* `sell_equipment` — **«Продать оборудование»** (Шаблон `SellButton`)
+* `sell_resource` — **«Продать ресурс»** (Шаблон `SellButton`)
+* `install_equipment` — **«Установить оборудование»** (Шаблон `BuyButton`)
+* `uninstall_equipment` — **«Снять оборудование»** (Шаблон `SellButton`)
+
+---
+
+## Связывание состояний с шаблонами кнопок
+
+1. **Динамический текст**:
+   * Компоненты `BuyButton` и `SellButton` принимают свойство `label`.
+   * Текст кнопки изменяется автоматически в зависимости от активного торгового состояния `tradeAction`:
+     ```typescript
+     const tradeActionLabels: Record<TradeActionType, string> = {
+         buy_ship: 'Купить корабль',
+         buy_equipment: 'Купить оборудование',
+         buy_resource: 'Купить ресурс',
+         sell_ship: 'Продать корабль',
+         sell_equipment: 'Продать оборудование',
+         sell_resource: 'Продать ресурс',
+         install_equipment: 'Установить оборудование',
+         uninstall_equipment: 'Снять оборудование',
+     };
+     ```
+
 
 ---
 
