@@ -536,7 +536,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
         && (selectedSlotId === null || item.slotId === selectedSlotId),
     );
     const selectedItem = selectedItemId !== null
-        ? (catalogItems[activeTab].find((item) => item.id === selectedItemId) || null)
+        ? (catalogItems.all.find((item) => item.id === selectedItemId) || null)
         : null;
     const selectedForSaleShip = catalog.ships.find((ship) => ship.id === selectedForSaleShipId) || null;
 
@@ -551,7 +551,10 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                 setTradeAction(null);
                 setIsActionTriggered(false);
             }
-        } else if (selectedItem != null) {
+        } else if (selectedSlotRowId !== 0 && selectedItem != null) {
+            setTradeAction('sell_equipment');
+            setIsActionTriggered(true);
+        } else if (selectedItemId !== null && selectedItem != null) {
             const itemPrice = Number(selectedItem.price_buy || 0);
             const userCredits = hangar ? Number(hangar.credits || 0) : 0;
             const isEquipment = catalog.equipments.some((entry) => entry.id === selectedItem.id);
