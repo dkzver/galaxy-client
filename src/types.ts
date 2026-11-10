@@ -59,5 +59,16 @@ export interface SpacePlayer {
     z: number;
 }
 
+export type TradeActionType =
+    | 'buy_ship'
+    | 'buy_equipment'
+    | 'buy_resource'
+    | 'sell_ship'
+    | 'sell_equipment'
+    | 'sell_resource'
+    | 'install_equipment'
+    | 'uninstall_equipment';
+
 export type AppScreen = 'auth' | 'hangar' | 'space';
 export type SpaceZone = 'galaxy-map' | 'sector-alpha';
+

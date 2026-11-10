@@ -2,7 +2,7 @@
 import {useEffect, useId, useLayoutEffect, useRef, useState} from 'react';
 import type {CSSProperties, ReactNode} from 'react';
 import {createPortal} from 'react-dom';
-import type {HangarShip, HangarShipHold, HangarShipSlot, HangarStatus} from '../types';
+import type {HangarShip, HangarShipHold, HangarShipSlot, HangarStatus, TradeActionType} from '../types';
 import catalog from '../data/galaxy-admin-data.json';
 
 import {BuyButton} from './TradeButtons';
@@ -495,6 +495,8 @@ export default function HangarScreen({hangar, error, email, onLaunch, onLogout, 
     const [showShipsForSale, setShowShipsForSale] = useState(false);
     const [selectedForSaleShipId, setSelectedForSaleShipId] = useState(catalog.ships[0]?.id ?? null);
     const [selectedOwnedShipId, setSelectedOwnedShipId] = useState<string | number | null>(null);
+    const [tradeAction, setTradeAction] = useState<TradeActionType | null>(null);
+    const [isActionTriggered, setIsActionTriggered] = useState(false);
     const shipListRef = useRef<HTMLDivElement>(null);
     const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
     const [deletingAccount, setDeletingAccount] = useState(false);
@@ -519,6 +521,44 @@ export default function HangarScreen({hangar, error, email, onLaunch, onLogout, 
     );
     const selectedItem = visibleItems.find((item) => item.id === selectedItemId) || visibleItems[0] || null;
     const selectedForSaleShip = catalog.ships.find((ship) => ship.id === selectedForSaleShipId) || null;
+
+    useEffect(() => {
+        if (showShipsForSale && selectedForSaleShip) {
+            const shipPrice = Number(selectedForSaleShip.price_buy || 0);
+            const userCredits = hangar ? Number(hangar.credits || 0) : 0;
+            if (hangar != null && userCredits >= shipPrice) {
+                setTradeAction('buy_ship');
+                setIsActionTriggered(true);
+            } else {
+                setTradeAction(null);
+                setIsActionTriggered(false);
+            }
+        } else if (selectedItem) {
+            const itemPrice = Number(selectedItem.price_buy || 0);
+            const userCredits = hangar ? Number(hangar.credits || 0) : 0;
+            const isEquipment = activeTab === 'equipment' || ('slotId' in selectedItem && selectedItem.slotId !== undefined);
+            const actionType: TradeActionType = isEquipment ? 'buy_equipment' : 'buy_resource';
+
+            if (hangar != null && itemPrice > 0 && userCredits >= itemPrice) {
+                setTradeAction(actionType);
+                setIsActionTriggered(true);
+            } else {
+                setTradeAction(null);
+                setIsActionTriggered(false);
+            }
+        } else {
+            setTradeAction(null);
+            setIsActionTriggered(false);
+        }
+    }, [showShipsForSale, selectedForSaleShip, selectedItem, activeTab, hangar]);
+
+    function handleTradeButtonClick() {
+        if (!isActionTriggered || !tradeAction) {
+            console.warn('Действие заблокировано: триггер не установлен');
+            return;
+        }
+        console.log(`Выполнение действия: ${tradeAction}`);
+    }
     const ownedShips: DockShip[] = userShips.length
         ? userShips.map((ship) => ({
             id: ship.id,
@@ -818,7 +858,8 @@ export default function HangarScreen({hangar, error, email, onLaunch, onLogout, 
                                             <div className="shop-actions">
                                                 <BuyButton
                                                     type="button"
-                                                    disabled={!canAffordShip}
+                                                    disabled={!isActionTriggered || !canAffordShip}
+                                                    onClick={handleTradeButtonClick}
                                                     title={canAffordShip
                                                         ? `Купить ${selectedForSaleShip.name} за ${formatNumber(shipPrice)} ¤`
                                                         : `Недостаточно кредитов для покупки (требуется ${formatNumber(shipPrice)} ¤)`}
@@ -863,9 +904,20 @@ export default function HangarScreen({hangar, error, email, onLaunch, onLogout, 
                                                 <b>{formatNumber(selectedItem.price_sale)} <small>¤</small></b>
                                             </div>
                                         </div>
-                                        <p className="shop-note">Просмотр каталога доступен. Покупка и продажа пока не поддерживаются сервером.</p>
+                                        <p className="shop-note">
+                                            {isActionTriggered
+                                                ? `Ваш баланс: ${formatNumber(hangar?.credits)} ¤. Нажмите для покупки.`
+                                                : `Выберите предмет или проверьте баланс кредитов.`}
+                                        </p>
                                         <div className="shop-actions">
-                                            <BuyButton type="button" disabled title="На сервере ещё нет API торговли"/>
+                                            <BuyButton
+                                                type="button"
+                                                disabled={!isActionTriggered}
+                                                onClick={handleTradeButtonClick}
+                                                title={isActionTriggered
+                                                    ? `Купить ${selectedItem.name} за ${formatNumber(selectedItem.price_buy)} ¤`
+                                                    : `Покупка недоступна`}
+                                            />
                                         </div>
                                     </>
                                 ) : (
