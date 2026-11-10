@@ -1005,47 +1005,6 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                             </div>
                                         </>
                                     );
-                                })() : !showShipsForSale && ownedShip ? (() => {
-                                    const salePrice = Number(ownedShipModel?.price_sale || 0);
-                                    const canSellShip = userShips.length > 1;
-
-                                    return (
-                                        <>
-                                            <ShipInformation
-                                                name={ownedShipModel?.name || `Корабль ${ownedShip.ship_id}`}
-                                                meta={ownedShip ? `Корабль #${ownedShip.id} · ${ownedShip.status === 1 ? 'разрушен' : 'в строю'}` : 'Активный корабль'}
-                                                model={ownedShipModel}
-                                                shipSlots={ownedShip?.slots}
-                                                shipHolds={ownedShip?.holds}
-                                                rows={ownedShipRows}
-                                                onOpenSlot={handleSlotSelect}
-                                            />
-                                            <div className="ship-rows shop-price-rows">
-                                                <div className="ship-row">
-                                                    <span>Цена продажи</span>
-                                                    <b>{formatNumber(salePrice)} <small>¤</small></b>
-                                                </div>
-                                            </div>
-                                            <p className="shop-note">
-                                                {canSellShip
-                                                    ? `Нажмите для продажи корабля за ${formatNumber(salePrice)} ¤.`
-                                                    : `Невозможно продать единственный корабль во флоте.`}
-                                            </p>
-                                            <div className="shop-actions">
-                                                <SellButton
-                                                    type="button"
-                                                    label={tradeAction ? tradeActionLabels[tradeAction] : 'Продать корабль'}
-                                                    disabled={!canSellShip || isTradeProcessing}
-                                                    onClick={handleTradeButtonClick}
-                                                    title={isTradeProcessing
-                                                        ? 'Выполняется обработка...'
-                                                        : canSellShip
-                                                        ? `Продать ${ownedShipModel?.name || 'корабль'} за ${formatNumber(salePrice)} ¤`
-                                                        : 'Невозможно продать единственный корабль'}
-                                                />
-                                            </div>
-                                        </>
-                                    );
                                 })() : selectedItem ? (
                                     <>
                                         <span className="ship-sub">
@@ -1112,7 +1071,48 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                             )}
                                         </div>
                                     </>
-                                ) : (
+                                ) : !showShipsForSale && ownedShip ? (() => {
+                                    const salePrice = Number(ownedShipModel?.price_sale || 0);
+                                    const canSellShip = userShips.length > 1;
+
+                                    return (
+                                        <>
+                                            <ShipInformation
+                                                name={ownedShipModel?.name || `Корабль ${ownedShip.ship_id}`}
+                                                meta={ownedShip ? `Корабль #${ownedShip.id} · ${ownedShip.status === 1 ? 'разрушен' : 'в строю'}` : 'Активный корабль'}
+                                                model={ownedShipModel}
+                                                shipSlots={ownedShip?.slots}
+                                                shipHolds={ownedShip?.holds}
+                                                rows={ownedShipRows}
+                                                onOpenSlot={handleSlotSelect}
+                                            />
+                                            <div className="ship-rows shop-price-rows">
+                                                <div className="ship-row">
+                                                    <span>Цена продажи</span>
+                                                    <b>{formatNumber(salePrice)} <small>¤</small></b>
+                                                </div>
+                                            </div>
+                                            <p className="shop-note">
+                                                {canSellShip
+                                                    ? `Нажмите для продажи корабля за ${formatNumber(salePrice)} ¤.`
+                                                    : `Невозможно продать единственный корабль во флоте.`}
+                                            </p>
+                                            <div className="shop-actions">
+                                                <SellButton
+                                                    type="button"
+                                                    label={tradeAction ? tradeActionLabels[tradeAction] : 'Продать корабль'}
+                                                    disabled={!canSellShip || isTradeProcessing}
+                                                    onClick={handleTradeButtonClick}
+                                                    title={isTradeProcessing
+                                                        ? 'Выполняется обработка...'
+                                                        : canSellShip
+                                                        ? `Продать ${ownedShipModel?.name || 'корабль'} за ${formatNumber(salePrice)} ¤`
+                                                        : 'Невозможно продать единственный корабль'}
+                                                />
+                                            </div>
+                                        </>
+                                    );
+                                })() : (
                                     <div className="trade-empty">Выберите объект в каталоге</div>
                                 )}
                             </div>
