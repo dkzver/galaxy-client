@@ -1,7 +1,7 @@
 ﻿// Небольшой типизированный клиент REST API с единообразной обработкой ошибок.
 import type {AuthResponse, HangarShip, HangarStatus, TradeActionType} from './types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://galaxy-server-e2yp.onrender.com';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005';
 
 // Выполняет HTTP-запрос, добавляет токен авторизации и переводит ошибки API в текст.
 async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
