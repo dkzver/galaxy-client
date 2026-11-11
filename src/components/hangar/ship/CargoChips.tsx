@@ -1,4 +1,4 @@
-﻿// Р—РЅР°С‡РєРё РіСЂСѓР·Р° РЅР° РїР»РёС‚РєРµ: РґРѕ С‚СЂС‘С… С€С‚СѓРє, СЃ РїРѕРґСЃРєР°Р·РєРѕР№ Рё РїРµСЂРµС…РѕРґРѕРј Рє РїСЂРѕРґР°Р¶Рµ.
+// Значки груза на плитке: до трёх штук, с подсказкой и переходом к продаже.
 import type {HangarCargoLine} from '../../../types';
 import type {OwnedCargoSelection} from '../../../lib/ship';
 import type {TipContent} from '../../../lib/tips';
@@ -28,7 +28,7 @@ export default function CargoChips({lines, selected, tipFor, tileTip, onCargoCli
                           className={`slot-cargo-chip${isSelected ? ' selected' : ''}`}
                           role="button"
                           tabIndex={0}
-                          aria-label={`${line.name}, ${formatNumber(line.amount_kg)} РєРі`}
+                          aria-label={`${line.name}, ${formatNumber(line.amount_kg)} кг`}
                           onMouseEnter={(event) => {
                               const content = tipFor(line);
                               if (content) onShowTip(event.currentTarget, content);

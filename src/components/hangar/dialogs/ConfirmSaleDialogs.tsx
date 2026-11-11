@@ -1,4 +1,4 @@
-﻿// РџРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РїСЂРѕРґР°Р¶Рё: РєРѕСЂР°Р±Р»СЊ С†РµР»РёРєРѕРј РёР»Рё РєРѕРЅС‚РµР№РЅРµСЂ РІРјРµСЃС‚Рµ СЃ РіСЂСѓР·РѕРј.
+// Подтверждение продажи: корабль целиком или контейнер вместе с грузом.
 import type {HangarEquipmentInstance, HangarShip} from '../../../types';
 import {formatNumber} from '../../../lib/format';
 import {instanceSalePrice} from '../../../lib/ship';
@@ -40,69 +40,69 @@ export default function ConfirmSaleDialogs({
     return (
         <Modal open={Boolean(confirm)} onClose={onClose}
                backdropClassName="slot-modal" dialogClassName="slot-dialog"
-               ariaLabel="РџРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РїСЂРѕРґР°Р¶Рё">
+               ariaLabel="Подтверждение продажи">
             {confirm && (
                 <>
                     <div className="slot-dialog-head">
                         <div>
-                            <span className="eyebrow">РџР РћР”РђР–Рђ</span>
+                            <span className="eyebrow">ПРОДАЖА</span>
                             <h3>{confirm.kind === 'ship'
-                                ? `В«${ship?.name}В» вЂ” РІРјРµСЃС‚Рµ СЃ СЃРѕРґРµСЂР¶РёРјС‹Рј`
-                                : confirmInstance ? `В«${confirmInstance.name}В» вЂ” РІРјРµСЃС‚Рµ СЃ РіСЂСѓР·РѕРј` : ''}</h3>
+                                ? `«${ship?.name}» — вместе с содержимым`
+                                : confirmInstance ? `«${confirmInstance.name}» — вместе с грузом` : ''}</h3>
                         </div>
-                        <button className="slot-close" type="button" aria-label="Р—Р°РєСЂС‹С‚СЊ"
-                                onClick={onClose}>Г—</button>
+                        <button className="slot-close" type="button" aria-label="Закрыть"
+                                onClick={onClose}>×</button>
                     </div>
                     <div className="dialog-body">
                         {confirm.kind === 'ship' ? (
                             <>
-                                <p className="dialog-text">РљРѕСЂР°Р±Р»СЊ РїСЂРѕРґР°С‘С‚СЃСЏ РІРјРµСЃС‚Рµ СЃ РѕР±РѕСЂСѓРґРѕРІР°РЅРёРµРј Рё РіСЂСѓР·РѕРј.</p>
+                                <p className="dialog-text">Корабль продаётся вместе с оборудованием и грузом.</p>
                                 <div className="dialog-lines">
-                                    <div className="dialog-line cost"><span>РљРѕСЂР°Р±Р»СЊ</span>
-                                        <b>{formatNumber(shipPrice)} В¤</b></div>
+                                    <div className="dialog-line cost"><span>Корабль</span>
+                                        <b>{formatNumber(shipPrice)} ¤</b></div>
                                     <div className="dialog-line cost">
-                                        <span>РћР±РѕСЂСѓРґРѕРІР°РЅРёРµ В· {equipmentCount} С€С‚.</span>
-                                        <b>{formatNumber(equipmentPrice)} В¤</b></div>
+                                        <span>Оборудование · {equipmentCount} шт.</span>
+                                        <b>{formatNumber(equipmentPrice)} ¤</b></div>
                                     <div className="dialog-line cost">
-                                        <span>Р“СЂСѓР· В· {formatNumber(cargoKg)} РєРі</span>
-                                        <b>{formatNumber(cargoPrice)} В¤</b></div>
-                                    <div className="dialog-line total"><span>РС‚РѕРіРѕ</span>
-                                        <b>{formatNumber(shipPrice + equipmentPrice + cargoPrice)} В¤</b></div>
+                                        <span>Груз · {formatNumber(cargoKg)} кг</span>
+                                        <b>{formatNumber(cargoPrice)} ¤</b></div>
+                                    <div className="dialog-line total"><span>Итого</span>
+                                        <b>{formatNumber(shipPrice + equipmentPrice + cargoPrice)} ¤</b></div>
                                 </div>
                                 <ErrorLine text={message}/>
                                 <div className="dialog-actions">
                                     <button className="trade-button sell" type="button" disabled={busy}
                                             onClick={onSellShip}>
-                                        РџСЂРѕРґР°С‚СЊ РєРѕСЂР°Р±Р»СЊ
+                                        Продать корабль
                                     </button>
                                     <button className="trade-button ghost" type="button"
-                                            onClick={onClose}>РћС‚РјРµРЅР°</button>
+                                            onClick={onClose}>Отмена</button>
                                 </div>
                             </>
                         ) : confirmInstance ? (
                             <>
-                                <p className="dialog-text">РљРѕРЅС‚РµР№РЅРµСЂ РїСЂРѕРґР°С‘С‚СЃСЏ С‚РѕР»СЊРєРѕ РІРјРµСЃС‚Рµ СЃ РіСЂСѓР·РѕРј. Р’РЅСѓС‚СЂРё:</p>
+                                <p className="dialog-text">Контейнер продаётся только вместе с грузом. Внутри:</p>
                                 <div className="dialog-lines">
                                     {confirmInstance.cargo.map((line) => (
                                         <div className="dialog-line" key={line.resource_id}>
                                             <span>{line.name}</span>
-                                            <b>{formatNumber(line.amount_kg)} РєРі</b>
-                                            <small>{formatNumber(line.amount_kg * line.price_sale)} В¤</small>
+                                            <b>{formatNumber(line.amount_kg)} кг</b>
+                                            <small>{formatNumber(line.amount_kg * line.price_sale)} ¤</small>
                                         </div>
                                     ))}
                                     <div className="dialog-line total">
-                                        <span>РС‚РѕРіРѕ</span>
-                                        <b>{formatNumber(instanceSalePrice(confirmInstance))} В¤</b>
+                                        <span>Итого</span>
+                                        <b>{formatNumber(instanceSalePrice(confirmInstance))} ¤</b>
                                     </div>
                                 </div>
                                 <ErrorLine text={message}/>
                                 <div className="dialog-actions">
                                     <button className="trade-button sell" type="button" disabled={busy}
                                             onClick={() => onSellContainer(confirmInstance)}>
-                                        РџСЂРѕРґР°С‚СЊ РІРјРµСЃС‚Рµ СЃ РіСЂСѓР·РѕРј
+                                        Продать вместе с грузом
                                     </button>
                                     <button className="trade-button ghost" type="button"
-                                            onClick={onClose}>РћС‚РјРµРЅР°</button>
+                                            onClick={onClose}>Отмена</button>
                                 </div>
                             </>
                         ) : null}
