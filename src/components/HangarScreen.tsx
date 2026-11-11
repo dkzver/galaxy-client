@@ -1,10 +1,20 @@
-// Ангар-магазин: React-версия каталога, дока и панелей из HTML-референса.
-import {useEffect, useId, useLayoutEffect, useRef, useState} from 'react';
+// Ангар: каталог, содержимое корабля, консоль выбранного объекта и торговля.
+// Цены, доступность места и снимок состояния считает сервер; клиент только показывает
+// и подсказывает, куда встанет покупка.
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import type {CSSProperties, ReactNode} from 'react';
 import {createPortal} from 'react-dom';
-import {executeTrade} from '../api';
-import type {HangarShip, HangarShipHold, HangarShipSlot, HangarStatus, TradeActionType} from '../types';
-import catalog from '../data/galaxy-admin-data.json';
+import {ApiError, executeTrade} from '../api';
+import type {
+    HangarCargoLine,
+    HangarEquipmentInstance,
+    HangarHold,
+    HangarShip,
+    HangarSlot,
+    HangarStatus,
+    TradeActionType,
+} from '../types';
+import rawCatalog from '../data/catalog.json';
 
 import {BuyButton, SellButton} from './TradeButtons';
 import './hangar-reference.css';
@@ -13,66 +23,48 @@ type CatalogItem = {
     id: number;
     name: string;
     categoryId?: number;
-    values?: Record<string, string | number | undefined>;
-    price_buy?: string | number;
-    price_sale?: string | number;
+    values?: Record<string, string>;
+    price_buy?: string;
+    price_sale?: string;
     icon?: string;
     slotId?: number | null;
+    prop2?: string[];
 };
 
-type CatalogCategory = {
-    id: number;
-    name: string;
-    icon?: string;
-    propIds?: number[];
-};
-
+type CatalogCategory = { id: number; name: string; icon?: string };
 type CatalogTab = 'all' | 'equipment' | 'resources';
-type DockShip = {
-    id: string | number;
-    name: string;
-    isForSale: boolean;
-    price_buy?: string | number;
-    modelId?: number;
+
+type Catalog = {
+    settings: {initialShipId: number; startingCredits: string; id_category_hold: number; id_propert_mass_value: number};
+    properties: Array<{id: number; name: string; unit?: string}>;
+    slots: Array<{id: number; name: string}>;
+    ships: Array<{
+        id: number;
+        name: string;
+        description?: string;
+        values?: Record<string, string>;
+        slots: Array<{slotId: number; itemId?: number}>;
+        holds: Array<{capacity: string; itemId?: number}>;
+        price_buy: string;
+        price_sale: string;
+        icon?: string;
+    }>;
+    equipments: CatalogItem[];
+    resources: CatalogItem[];
+    categoriesEquipment: CatalogCategory[];
+    categoriesResource: CatalogCategory[];
 };
 
-type HoldDisplayItem = {
-    key: string;
-    modelId: number;
-    kind: 'equipment' | 'resource';
-    name: string;
-    categoryName?: string;
-    icon?: string;
-    mass: number;
-    salePrice?: string | number;
-};
+const catalog = rawCatalog as unknown as Catalog;
 
-type HoveredTooltip =
-    | {kind: 'slot'; index: number; target: HTMLButtonElement}
-    | {kind: 'hold-item'; holdIndex: number; itemIndex: number; target: HTMLButtonElement};
+const MASS_PROPERTY_ID = String(catalog.settings.id_propert_mass_value);
+const CAPACITY_PROPERTY_ID = String(catalog.properties.find((property) => property.name === 'Вместимость')?.id ?? 12);
 
-interface Props {
-    token: string;
-    hangar: HangarStatus | null;
-    onHangarUpdate?: (hangar: HangarStatus) => void;
-    error: string;
-    email: string;
-    onLaunch: () => void;
-    onLogout: () => void;
-    onDeleteAccount: () => Promise<void>;
-}
+type Placement = { kind: 'slot' | 'hold'; id: number; index: number };
 
-const catalogItems: Record<CatalogTab, CatalogItem[]> = {
-    all: [...catalog.equipments, ...catalog.resources],
-    equipment: catalog.equipments,
-    resources: catalog.resources,
-};
+type OwnedCargoSelection = { containerId: number; resourceId: number };
 
-const catalogCategories: Record<CatalogTab, CatalogCategory[]> = {
-    all: [],
-    equipment: catalog.categoriesEquipment,
-    resources: catalog.categoriesResource,
-};
+type ConfirmState = {kind: 'ship'} | {kind: 'container'; instanceId: number} | null;
 
 const tabLabels: Record<CatalogTab, string> = {
     all: 'ВСЁ',
@@ -80,22 +72,19 @@ const tabLabels: Record<CatalogTab, string> = {
     resources: 'РЕСУРСЫ',
 };
 
-const tradeActionLabels: Record<TradeActionType, string> = {
+const actionLabels: Record<TradeActionType, string> = {
     buy_ship: 'Купить корабль',
-    buy_equipment: 'Купить оборудование',
-    buy_resource: 'Купить ресурс',
     sell_ship: 'Продать корабль',
+    buy_equipment: 'Купить оборудование',
     sell_equipment: 'Продать оборудование',
+    buy_resource: 'Купить ресурс',
     sell_resource: 'Продать ресурс',
-    install_equipment: 'Установить оборудование',
-    uninstall_equipment: 'Снять оборудование',
 };
 
 const iconShapes: Record<string, ReactNode> = {
     ship: <><path d="m12 3 5 7-1 8-4-2-4 2-1-8 5-7Z"/><path d="M10 12h4M12 3v7"/></>,
     chevron: <path d="m9 18 6-6-6-6"/>,
     shipAdd: <><path d="m4 10 8-6 8 6-2 8H6l-2-8Z"/><path d="M4 10h16M8 14h2m4 0h2"/><path d="M19 3v6m-3-3h6"/></>,
-    rocket: <><path d="M12 3c3 3 4.5 6 4.5 9L12 16l-4.5-4C7.5 9 9 6 12 3Z"/><path d="m9 17-2 4 4-2m4-2 2 4-4-2"/></>,
     weapon: <><path d="m5 19 4-4m2-2 8-8v5l-8 8H6v-5l8-8h5"/><path d="m14 10 3 3"/></>,
     shield: <path d="M12 3 5 6v5c0 4.6 2.8 8.1 7 10 4.2-1.9 7-5.4 7-10V6l-7-3Z"/>,
     engine: <><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></>,
@@ -112,8 +101,7 @@ const iconShapes: Record<string, ReactNode> = {
     account: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></>,
 };
 
-// Иконки из каталога рендерятся inline-SVG, как в исходном ангаре.
-function HangarIcon({name, size = 18}: {name?: string; size?: number}) {
+function HangarIcon({name, size = 18}: {name?: string | null; size?: number}) {
     return (
         <svg aria-hidden="true" fill="none" height={size} viewBox="0 0 24 24" width={size}
              stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.7}>
@@ -137,677 +125,658 @@ function ShipGlyph({compact = false}: {compact?: boolean}) {
     );
 }
 
-function formatNumber(value: string | number | undefined) {
+function formatNumber(value: string | number | undefined | null) {
     const number = Number(value);
     return Number.isFinite(number) ? number.toLocaleString('ru-RU') : '—';
 }
 
-function getCatalogPropertyValue(item: CatalogItem | undefined, propertyId: number) {
-    return item?.values?.[String(propertyId)];
+function massOf(item?: CatalogItem | null) {
+    const value = Number(item?.values?.[MASS_PROPERTY_ID]);
+    return Number.isFinite(value) ? value : 0;
 }
 
-const holdTitle: string = 'Трюм';
+function capacityOf(item?: CatalogItem | null) {
+    const value = Number(item?.values?.[CAPACITY_PROPERTY_ID]);
+    return Number.isFinite(value) ? value : 0;
+}
 
-const slotIcons: Record<number, string> = {
-    1: 'weapon',
-    2: 'weapon',
-    3: 'shield',
-    4: 'engine',
-    5: 'radar',
-    6: 'gem',
-    7: 'tool',
-    8: 'tool',
-    9: 'crate',
-    10: 'grid',
-    11: 'fuel',
-};
+// Контейнер из каталога: есть вместимость и заполнен prop2 — то же правило, что на сервере.
+function isCatalogContainer(item?: CatalogItem | null) {
+    return capacityOf(item) > 0 && (item?.prop2?.length ?? 0) > 0;
+}
 
-function ShipInformation({
-    name,
-    meta,
-    model,
-    shipSlots,
-    shipHolds,
-    rows = [],
-    onOpenSlot,
-}: {
-    name: string;
-    meta: string;
-    model?: typeof catalog.ships[number];
-    shipSlots?: HangarShipSlot[];
-    shipHolds?: HangarShipHold[];
-    rows?: Array<{label: string; value: string}>;
-    onOpenSlot?: (slotTypeId: number, slotRowId?: number, slotEquipmentId?: number | null) => void;
-}) {
-    const [hoveredTooltip, setHoveredTooltip] = useState<HoveredTooltip | null>(null);
-    const tooltipId = useId();
-    const tooltipRef = useRef<HTMLDivElement>(null);
-    const slotViews = shipSlots
-        ? shipSlots.map((slot) => ({id: slot.id, slotId: slot.slot_id, equipmentId: slot.equipment_id}))
-        : model?.slots.map((slot, index) => ({id: index, slotId: slot.slotId, equipmentId: slot.itemId || null}));
-    const holdViews = shipHolds
-        ? shipHolds.map((hold) => ({
-            id: hold.id,
-            index: hold.hold_index,
-            capacity: hold.capacity_mass,
-            occupied: hold.occupied_mass,
-            cargoMass: hold.resources.reduce((mass, resource) => mass + Number(resource.amount), 0),
-            cargoBoxName: hold.source_equipment_model_id
-                ? catalog.equipments.find((item) => item.id === hold.source_equipment_model_id)?.name
-                : undefined,
-            items: [
-                ...hold.equipment.map((instance): HoldDisplayItem => {
-                    const item = catalog.equipments.find((entry) => entry.id === instance.equipment_id);
-                    return {
-                        key: `equipment-${instance.id}`,
-                        modelId: instance.equipment_id,
-                        kind: 'equipment',
-                        name: item?.name || `Оборудование ${instance.equipment_id}`,
-                        categoryName: catalog.categoriesEquipment.find((category) =>
-                            category.id === item?.categoryId)?.name,
-                        icon: item?.icon || 'tool',
-                        mass: Number(getCatalogPropertyValue(item, catalog.settings.id_propert_mass_value) || 0),
-                        salePrice: item?.price_sale,
-                    };
-                }),
-                ...hold.resources.map((instance): HoldDisplayItem => {
-                    const item = catalog.resources.find((entry) => entry.id === instance.resource_id);
-                    return {
-                        key: `resource-${instance.id}`,
-                        modelId: instance.resource_id,
-                        kind: 'resource',
-                        name: item?.name || `Ресурс ${instance.resource_id}`,
-                        categoryName: catalog.categoriesResource.find((category) =>
-                            category.id === item?.categoryId)?.name,
-                        icon: item?.icon || 'gem',
-                        mass: Number(instance.amount),
-                        salePrice: item?.price_sale,
-                    };
-                }),
-            ],
-        }))
-        : model?.holds.map((hold, index) => {
-            const equipmentId = Number(hold.itemId || 0);
-            const item = equipmentId > 0
-                ? catalog.equipments.find((entry) => entry.id === equipmentId)
-                : undefined;
-            const mass = Number(getCatalogPropertyValue(item, catalog.settings.id_propert_mass_value) || 0);
-            return {
-                id: index,
-                index,
-                capacity: hold.capacity,
-                occupied: mass,
-                cargoMass: 0,
-                cargoBoxName: undefined,
-                items: item ? [{
-                    key: `equipment-${equipmentId}`,
-                    modelId: equipmentId,
-                    kind: 'equipment' as const,
-                    name: item.name,
-                    categoryName: catalog.categoriesEquipment.find((category) =>
-                        category.id === item.categoryId)?.name,
-                    icon: item.icon || 'tool',
-                    mass,
-                    salePrice: item.price_sale,
-                }] : [],
-            };
+function priceOf(item: CatalogItem | null | undefined, field: 'price_buy' | 'price_sale') {
+    const value = Number(item?.[field]);
+    return Number.isFinite(value) ? value : 0;
+}
+
+function categoryOf(item: CatalogItem | null | undefined, tab: CatalogTab) {
+    const list = tab === 'resources' ? catalog.categoriesResource : catalog.categoriesEquipment;
+    return list.find((category) => category.id === item?.categoryId);
+}
+
+function slotTypeName(slotTypeId: number) {
+    return catalog.slots.find((slot) => slot.id === Number(slotTypeId))?.name || 'Крепление';
+}
+
+function locationLabel(instance: HangarEquipmentInstance) {
+    return instance.location.kind === 'slot'
+        ? `Крепление ${(instance.location.index ?? 0) + 1}`
+        : `Трюм ${(instance.location.index ?? 0) + 1}`;
+}
+
+// Полный список экземпляров корабля без дублей: контейнеры приходят и в слотах, и в трюмах.
+function shipInstances(ship: HangarShip | null): HangarEquipmentInstance[] {
+    if (!ship) return [];
+    const byId = new Map<number, HangarEquipmentInstance>();
+    for (const container of ship.containers) byId.set(container.id, container);
+    for (const hold of ship.holds) {
+        for (const item of hold.equipment) if (!byId.has(item.id)) byId.set(item.id, item);
+    }
+    for (const slot of ship.slots) {
+        if (!slot.instance_id || byId.has(slot.instance_id)) continue;
+        byId.set(slot.instance_id, {
+            id: slot.instance_id,
+            instance_id: slot.instance_id,
+            model_id: slot.model_id ?? 0,
+            name: slot.name || 'Оборудование',
+            icon: slot.icon || 'tool',
+            mass: slot.mass,
+            slot_id: Number(slot.id),
+            hold_id: null,
+            location: {kind: 'slot', id: Number(slot.id), index: slot.slot_index},
+            is_container: false,
+            capacity_kg: 0,
+            used_kg: 0,
+            free_kg: 0,
+            allowed: [],
+            cargo: slot.cargo ?? [],
         });
+    }
+    return [...byId.values()];
+}
 
-    function showSlotTooltip(target: HTMLButtonElement, index: number) {
-        setHoveredTooltip({kind: 'slot', index, target});
+function findInstance(ship: HangarShip | null, instanceId: number | null) {
+    if (!ship || instanceId === null) return null;
+    return shipInstances(ship).find((instance) => instance.id === instanceId) ?? null;
+}
+
+// Куда встанет оборудование: явно выбранное крепление, иначе первый свободный слот, затем трюм.
+function resolvePlacement(ship: HangarShip | null, item: CatalogItem, explicitSlotRowId: number | null): Placement | null {
+    if (!ship) return null;
+    const slotTypeId = Number(item.slotId ?? 0);
+    const mass = massOf(item);
+
+    if (explicitSlotRowId !== null) {
+        const slot = ship.slots.find((row) => Number(row.id) === explicitSlotRowId);
+        if (slot && !slot.instance_id && Number(slot.slot_type_id) === slotTypeId) {
+            return {kind: 'slot', id: Number(slot.id), index: slot.slot_index};
+        }
     }
 
-    function showHoldItemTooltip(target: HTMLButtonElement, holdIndex: number, itemIndex: number) {
-        setHoveredTooltip({kind: 'hold-item', holdIndex, itemIndex, target});
+    if (slotTypeId > 0) {
+        const freeSlot = ship.slots.find((slot) => !slot.instance_id && Number(slot.slot_type_id) === slotTypeId);
+        if (freeSlot) return {kind: 'slot', id: Number(freeSlot.id), index: freeSlot.slot_index};
     }
 
-    useLayoutEffect(() => {
-        if (!hoveredTooltip || !tooltipRef.current) return;
+    const freeHold = ship.holds.find((hold) => hold.free_mass >= mass);
+    if (freeHold) return {kind: 'hold', id: Number(freeHold.id), index: freeHold.hold_index};
 
-        const tooltip = tooltipRef.current;
-        const placeTooltip = () => {
-            if (!hoveredTooltip.target.isConnected) {
-                setHoveredTooltip(null);
-                return;
-            }
+    return null;
+}
 
-            const bounds = hoveredTooltip.target.getBoundingClientRect();
-            const left = bounds.right + tooltip.offsetWidth + 10 <= window.innerWidth - 8
-                ? bounds.right + 10
-                : Math.max(8, bounds.left - tooltip.offsetWidth - 10);
-            const top = Math.min(
-                window.innerHeight - tooltip.offsetHeight - 8,
-                Math.max(8, bounds.top),
-            );
+// Контейнер под ресурс: выбранный игроком либо первый принимающий со свободным местом.
+function resolveContainer(ship: HangarShip | null, resource: CatalogItem | null, explicitId: number | null) {
+    if (!ship || !resource) return {target: null, reason: 'none' as const};
+    const name = resource.name.trim().toLowerCase();
+    const accepting = ship.containers.filter((container) =>
+        container.allowed.some((allowed) => allowed.trim().toLowerCase() === name));
 
-            tooltip.style.left = `${left}px`;
-            tooltip.style.top = `${top}px`;
+    if (explicitId !== null) {
+        const explicit = ship.containers.find((container) => container.id === explicitId);
+        if (explicit && accepting.some((container) => container.id === explicit.id)) {
+            return explicit.free_kg >= 1
+                ? {target: explicit, reason: 'ok' as const}
+                : {target: null, reason: 'full' as const};
+        }
+    }
+    if (accepting.length === 0) return {target: null, reason: 'none' as const};
+    const withSpace = accepting.find((container) => container.free_kg >= 1);
+    return withSpace ? {target: withSpace, reason: 'ok' as const} : {target: null, reason: 'full' as const};
+}
+
+// Модель из каталога в форме корабля игрока: одна карточка рисует и свой корабль, и модель в продаже.
+function catalogShipAsHangar(model: Catalog['ships'][number]): HangarShip {
+    const slots = model.slots.map((slot, index) => {
+        const item = Number(slot.itemId ?? 0) > 0
+            ? catalog.equipments.find((entry) => entry.id === Number(slot.itemId)) ?? null
+            : null;
+        return {
+            id: -1 - index,
+            slot_index: index,
+            slot_type_id: Number(slot.slotId),
+            slot_type_name: slotTypeName(Number(slot.slotId)),
+            instance_id: item ? -101 - index : null,
+            model_id: item ? item.id : null,
+            name: item ? item.name : null,
+            icon: item ? item.icon ?? 'tool' : null,
+            mass: item ? massOf(item) : 0,
+            cargo: [] as HangarCargoLine[],
         };
+    });
 
-        placeTooltip();
-        window.addEventListener('resize', placeTooltip);
-        window.addEventListener('scroll', placeTooltip, true);
-        return () => {
-            window.removeEventListener('resize', placeTooltip);
-            window.removeEventListener('scroll', placeTooltip, true);
+    const holds = model.holds.map((hold, index) => {
+        const item = Number(hold.itemId ?? 0) > 0
+            ? catalog.equipments.find((entry) => entry.id === Number(hold.itemId)) ?? null
+            : null;
+        const capacity = Number(hold.capacity);
+        const instance: HangarEquipmentInstance | null = item ? {
+            id: -201 - index,
+            instance_id: -201 - index,
+            model_id: item.id,
+            name: item.name,
+            icon: item.icon ?? 'tool',
+            mass: massOf(item),
+            slot_id: null,
+            hold_id: -1 - index,
+            location: {kind: 'hold', id: -1 - index, index},
+            is_container: isCatalogContainer(item),
+            capacity_kg: capacityOf(item),
+            used_kg: 0,
+            free_kg: capacityOf(item),
+            allowed: item.prop2 ?? [],
+            cargo: [],
+        } : null;
+        const used = instance ? instance.mass : 0;
+        return {
+            id: -301 - index,
+            hold_index: index,
+            capacity_mass: capacity,
+            used_mass: used,
+            free_mass: capacity - used,
+            equipment: instance ? [instance] : [],
         };
-    }, [hoveredTooltip, slotViews, holdViews]);
+    });
 
-    return (
-        <>
-            <strong className="ship-title">{name}</strong>
-            <span className="ship-sub ship-meta-line">{meta}</span>
-            <div className="ship-rows">
-                {model?.values && Object.entries(model.values).map(([id, value]) => {
-                    const property = catalog.properties.find((entry) => entry.id === Number(id));
-                    if (!property) return null;
-                    return (
-                        <div className="ship-row" key={id}>
-                            <span>{property.name}</span>
-                            <b>{formatNumber(value)} {property.unit && <small>{property.unit}</small>}</b>
-                        </div>
-                    );
-                })}
-                {rows.map((row) => (
-                    <div className="ship-row" key={row.label}>
-                        <span>{row.label}</span><b>{row.value}</b>
-                    </div>
-                ))}
-                {!model && (
-                    <div className="ship-row">
-                        <span>Характеристики</span><b>Не загружены</b>
-                    </div>
-                )}
-            </div>
-            <span className="ship-sub">Трюмы · {holdViews ? holdViews.length : '—'}</span>
-            {holdViews?.length ? (
-                <div className="hold-list">
-                    {holdViews.map((hold) => {
-                        const capacity = Number(hold.capacity);
-                        const occupied = Number(hold.occupied);
-                        const percent = capacity > 0
-                            ? Math.min(Math.round(occupied / capacity * 100), 100)
-                            : 0;
-                        return (
-                            <div className="hold-row" key={`${holdTitle}-${hold.id}`}>
-                                <div className="hold-head">
-                                    <strong>{holdTitle} {hold.index + 1}</strong>
-                                    <span>
-                                        {formatNumber(occupied)} / {formatNumber(capacity)} кг
-                                        {hold.cargoMass > 0
-                                            && ` · груз ${formatNumber(hold.cargoMass)} кг`}
-                                    </span>
-                                </div>
-                                <i className="hold-bar">
-                                    <em style={{width: `${percent}%`}}/>
-                                </i>
-                                {hold.items.length > 0 ? (
-                                    <div className="slot-grid hold-grid">
-                                        {hold.items.map((item, itemIndex) => (
-                                            <button
-                                                key={item.key}
-                                                type="button"
-                                                className="slot-tile hold-tile"
-                                                data-action="select-hold-item"
-                                                data-hold={hold.index}
-                                                data-item={itemIndex}
-                                                aria-label={`${item.name}, ${formatNumber(item.mass)} кг, ${holdTitle.toLowerCase()} ${hold.index + 1}`}
-                                                aria-describedby={hoveredTooltip?.kind === 'hold-item'
-                                                    && hoveredTooltip.holdIndex === hold.index
-                                                    && hoveredTooltip.itemIndex === itemIndex ? tooltipId : undefined}
-                                                title={`${item.name} · ${formatNumber(item.mass)} кг`}
-                                                onMouseEnter={(event) =>
-                                                    showHoldItemTooltip(event.currentTarget, hold.index, itemIndex)}
-                                                onMouseLeave={() => setHoveredTooltip(null)}
-                                                onFocus={(event) =>
-                                                    showHoldItemTooltip(event.currentTarget, hold.index, itemIndex)}
-                                                onBlur={() => setHoveredTooltip(null)}
-                                            >
-                                                <HangarIcon
-                                                    name={item.kind === 'resource' ? 'crate' : item.icon || 'tool'}
-                                                    size={22}
-                                                />
-                                                {item.kind === 'resource' && (
-                                                    <span className="slot-cargo-chips">
-                                                        <span
-                                                            className="slot-cargo-chip"
-                                                            data-cargo-key={`cargo:hold:${hold.index}:${itemIndex}:${item.modelId}`}
-                                                            data-cargo-id={item.modelId}
-                                                            data-cargo-name={item.name}
-                                                            data-cargo-box={hold.cargoBoxName || `${holdTitle} ${hold.index + 1}`}
-                                                            data-cargo-kg={item.mass}
-                                                            data-cargo-sale={item.salePrice || 0}
-                                                            data-cargo-icon={item.icon || 'gem'}
-                                                        >
-                                                            <HangarIcon name={item.icon || 'gem'} size={11}/>
-                                                        </span>
-                                                    </span>
-                                                )}
-                                                <span className="slot-qty">{formatNumber(item.mass)} кг</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <span className="hold-empty">Пусто</span>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            ) : (
-                <div className="hold-empty">
-                    {holdViews ? 'У этого корабля нет трюмов' : 'Данные о трюмах не загружены'}
-                </div>
-            )}
-            <span className="ship-sub">Слоты · {slotViews ? slotViews.length : '—'}</span>
-            {slotViews?.length ? (
-                <div className="slot-grid">
-                    {slotViews.map((slot, index) => {
-                        const slotName = catalog.slots.find((entry) => entry.id === slot.slotId)?.name
-                            || 'Неизвестный тип слота';
-                        const installedItem = slot.equipmentId
-                            ? catalog.equipments.find((item) => item.id === slot.equipmentId)
-                            : null;
-                        const isEmpty = !installedItem;
-                        const compatibleGoods = catalog.equipments.filter((item) => item.slotId === slot.slotId);
-                        return (
-                            <button
-                                className={`slot-tile${isEmpty ? ' empty' : ''}${isEmpty && compatibleGoods.length
-                                    ? ' has-goods'
-                                    : ''}`}
-                                key={`${slot.slotId}-${index}`}
-                                type="button"
-                                data-action="open-slot"
-                                data-index={index}
-                                aria-label={`${slotName}: ${installedItem?.name || 'слот пуст'}`}
-                                aria-describedby={hoveredTooltip?.kind === 'slot'
-                                    && hoveredTooltip.index === index ? tooltipId : undefined}
-                                onMouseEnter={(event) => showSlotTooltip(event.currentTarget, index)}
-                                onMouseLeave={() => setHoveredTooltip(null)}
-                                onFocus={(event) => showSlotTooltip(event.currentTarget, index)}
-                                onBlur={() => setHoveredTooltip(null)}
-                                onClick={() => {
-                                    onOpenSlot?.(slot.slotId, Number(slot.id), slot.equipmentId);
-                                }}
-                            >
-                                {installedItem
-                                    ? <HangarIcon name={installedItem.icon || slotIcons[slot.slotId] || 'grid'} size={22}/>
-                                    : null}
-                            </button>
-                        );
-                    })}
-                </div>
-            ) : (
-                <div className="hold-empty">
-                    {slotViews ? 'У этого корабля нет креплений' : 'Данные о слотах не загружены'}
-                </div>
-            )}
-            {hoveredTooltip && createPortal(
-                <div
-                    className="hangar-slot-tooltip"
-                    id={tooltipId}
-                    ref={tooltipRef}
-                    role="tooltip"
-                    style={{left: 0, top: 0}}
-                >
-                    {hoveredTooltip.kind === 'slot' && slotViews?.[hoveredTooltip.index] ? (
-                        <>
-                            <h4>
-                                {catalog.slots.find((entry) =>
-                                    entry.id === slotViews[hoveredTooltip.index].slotId)?.name
-                                    || 'Неизвестный тип слота'}
-                            </h4>
-                            <small>
-                                {slotViews[hoveredTooltip.index].equipmentId
-                                    ? catalog.equipments.find((item) =>
-                                        item.id === slotViews[hoveredTooltip.index].equipmentId)?.name
-                                        || 'Установленное оборудование'
-                                    : 'Слот пуст'}
-                            </small>
-                        </>
-                    ) : hoveredTooltip.kind === 'hold-item' ? (() => {
-                        const hold = holdViews?.find((entry) => entry.index === hoveredTooltip.holdIndex);
-                        const item = hold?.items[hoveredTooltip.itemIndex];
-                        if (!hold || !item) return null;
-                        const details = [
-                            item.categoryName,
-                            item.kind === 'resource'
-                                ? `${formatNumber(item.mass)} кг`
-                                : item.mass > 0 ? `${formatNumber(item.mass)} кг` : undefined,
-                        ].filter(Boolean);
+    const equipmentMass = slots.reduce((sum, slot) => sum + slot.mass, 0)
+        + holds.reduce((sum, hold) => sum + hold.used_mass, 0);
+    const hullMass = massOf(model);
 
-                        return (
-                            <>
-                                <h4>{item.name}</h4>
-                                <div className="tip-item">
-                                    <span className="tip-icon"><HangarIcon name={item.icon} size={16}/></span>
-                                    <span className="tip-copy">
-                                        <strong>{holdTitle} {hold.index + 1}</strong>
-                                        {details.length > 0 && <small>{details.join(' · ')}</small>}
-                                        {item.kind === 'resource' && Number(item.salePrice) > 0 && (
-                                            <small>{formatNumber(item.salePrice)} ¤/кг</small>
-                                        )}
-                                    </span>
-                                </div>
-                            </>
-                        );
-                    })() : null}
-                </div>,
-                document.body,
-            )}
-        </>
-    );
+    return {
+        id: Number(model.id),
+        ship_model_id: Number(model.id),
+        name: model.name,
+        status: 0,
+        health: 0,
+        shield: 0,
+        hangar_id: 0,
+        sol_id: 0,
+        mass: {hull: hullMass, equipment: equipmentMass, cargo: 0, total: hullMass + equipmentMass},
+        slots,
+        holds,
+        containers: holds.flatMap((hold) => hold.equipment).filter((instance) => instance.is_container),
+    };
+}
+
+const noop = () => {};
+
+/* ---------- Подсказки при наведении ---------- */
+
+type TipRow = {icon: string; name: string; lines: string[]};
+type TipContent = {title: string; rows: TipRow[]; note?: string};
+
+function equipmentMeta(model: CatalogItem | null | undefined) {
+    const category = categoryOf(model, 'equipment');
+    const mass = massOf(model);
+    return [category?.name, mass > 0 ? `${formatNumber(mass)} кг` : ''].filter(Boolean).join(' · ');
+}
+
+function cargoSummary(cargo: HangarCargoLine[]) {
+    return cargo.map((line) => `${line.name} ${formatNumber(line.amount_kg)} кг`).join(', ');
+}
+
+// Подсказка над креплением: что установлено, масса и груз контейнера.
+function slotTipContent(slot: HangarSlot, hasCompatible: boolean): TipContent {
+    const title = slot.slot_type_name || 'Слот';
+    if (!slot.instance_id) {
+        return {
+            title,
+            rows: [],
+            note: hasCompatible ? 'Слот пуст · нажмите — откроются совместимые товары' : 'Слот пуст',
+        };
+    }
+    const model = catalog.equipments.find((entry) => entry.id === slot.model_id) ?? null;
+    const cargo = slot.cargo ?? [];
+    const lines = [equipmentMeta(model)].filter(Boolean);
+    if (cargo.length > 0) lines.push(`груз: ${cargoSummary(cargo)}`);
+    const capacity = capacityOf(model);
+    if (capacity > 0) {
+        const used = cargo.reduce((sum, line) => sum + line.amount_kg, 0);
+        lines.push(`${formatNumber(used)} / ${formatNumber(capacity)} кг`);
+    }
+    return {title, rows: [{icon: slot.icon || 'tool', name: slot.name || 'Оборудование', lines}]};
+}
+
+// Подсказка над предметом в трюме: тот же вид, что у крепления.
+function holdTipContent(hold: HangarHold, instance: HangarEquipmentInstance): TipContent {
+    const model = catalog.equipments.find((entry) => entry.id === instance.model_id) ?? null;
+    const lines = [equipmentMeta(model)].filter(Boolean);
+    if (instance.cargo.length > 0) lines.push(`груз: ${cargoSummary(instance.cargo)}`);
+    if (instance.capacity_kg > 0) {
+        lines.push(`${formatNumber(instance.used_kg)} / ${formatNumber(instance.capacity_kg)} кг`);
+    }
+    return {
+        title: instance.name,
+        rows: [{icon: instance.icon, name: `Трюм ${hold.hold_index + 1}`, lines}],
+    };
+}
+
+// Подсказка над значком груза: ресурс, контейнер, килограммы и цена.
+function cargoTipContent(container: HangarEquipmentInstance, line: HangarCargoLine): TipContent {
+    return {
+        title: line.name,
+        rows: [{
+            icon: line.icon || 'crate',
+            name: `Контейнер «${container.name}»`,
+            lines: [
+                `${formatNumber(line.amount_kg)} кг${line.price_sale > 0
+                    ? ` · ${formatNumber(line.price_sale)} ¤/кг`
+                    : ' · цена не задана'}`,
+                'нажмите, чтобы продать 1 кг',
+            ],
+        }],
+    };
+}
+
+interface Props {
+    token: string;
+    hangar: HangarStatus | null;
+    onHangarUpdate?: (hangar: HangarStatus) => void;
+    error: string;
+    email: string;
+    onLaunch: () => void;
+    onLogout: () => void;
+    onDeleteAccount: () => Promise<void>;
 }
 
 export default function HangarScreen({token, hangar, onHangarUpdate, error, email, onLaunch, onLogout, onDeleteAccount}: Props) {
     const [activeTab, setActiveTab] = useState<CatalogTab>('all');
     const [activeCategory, setActiveCategory] = useState<number | null>(null);
-    const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+    const [selectedShipId, setSelectedShipId] = useState<string | number | null>(null);
+    const [showShipsForSale, setShowShipsForSale] = useState(false);
+    const [selectedForSaleShipId, setSelectedForSaleShipId] = useState<number | null>(catalog.ships[0]?.id ?? null);
+    // Корабль, выбранный до входа в режим покупки: к нему возвращаемся при выходе.
+    const [saleReturnShipId, setSaleReturnShipId] = useState<string | number | null>(null);
     const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
+    const [selectedContainerId, setSelectedContainerId] = useState<number | null>(null);
+    const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+    const [selectedInstanceId, setSelectedInstanceId] = useState<number | null>(null);
+    const [selectedCargo, setSelectedCargo] = useState<OwnedCargoSelection | null>(null);
+    const [message, setMessage] = useState('');
+    const [isTradeProcessing, setIsTradeProcessing] = useState(false);
+    const [confirm, setConfirm] = useState<ConfirmState>(null);
     const [shipGalleryStart, setShipGalleryStart] = useState(0);
     const [visibleShipCount, setVisibleShipCount] = useState(1);
-    const [showShipsForSale, setShowShipsForSale] = useState(false);
-    const [selectedForSaleShipId, setSelectedForSaleShipId] = useState(catalog.ships[0]?.id ?? null);
-    const [selectedOwnedShipId, setSelectedOwnedShipId] = useState<string | number | null>(null);
-    const [tradeAction, setTradeAction] = useState<TradeActionType | null>(null);
-    const [isActionTriggered, setIsActionTriggered] = useState(false);
-    const [isTradeProcessing, setIsTradeProcessing] = useState(false);
-    const [selectedSlotRowId, setSelectedSlotRowId] = useState<number>(0);
-    const shipListRef = useRef<HTMLDivElement>(null);
-    const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+    const [accountOpen, setAccountOpen] = useState(false);
     const [deletingAccount, setDeletingAccount] = useState(false);
     const [deleteError, setDeleteError] = useState('');
+    const shipListRef = useRef<HTMLDivElement>(null);
+    const [tip, setTip] = useState<{content: TipContent; target: HTMLElement} | null>(null);
+    const [tipPlaced, setTipPlaced] = useState(false);
+    const tipRef = useRef<HTMLDivElement>(null);
 
-    const credits = formatNumber(hangar?.credits);
-    const userShips = hangar?.ships ?? [];
-    const ownedShip: HangarShip | null = userShips.find((ship) =>
-        String(ship.id) === String(selectedOwnedShipId),
-    ) || userShips[0] || null;
-    const legacyShipModel = catalog.ships.find((ship) =>
-        ship.name.toLowerCase() === hangar?.hull_type?.toLowerCase()
-        || String(ship.id) === hangar?.hull_type,
-    );
-    const ownedShipModel = catalog.ships.find((ship) => ship.id === ownedShip?.ship_id)
-        || (!ownedShip ? legacyShipModel : undefined);
-    const shipName = ownedShipModel?.name || hangar?.hull_type?.toUpperCase() || 'КОРАБЛЬ';
-    const categories = catalogCategories[activeTab];
-    const visibleItems = catalogItems[activeTab].filter((item) =>
-        (activeCategory === null || item.categoryId === activeCategory)
-        && (selectedSlotId === null || item.slotId === selectedSlotId),
-    );
-    const selectedItem = selectedItemId !== null
-        ? (catalogItems.all.find((item) => item.id === selectedItemId) || null)
+    const ships = hangar?.ships ?? [];
+    const ship = ships.find((row) => String(row.id) === String(selectedShipId)) || ships[0] || null;
+    const credits = Number(hangar?.credits ?? 0);
+    const forSaleShip = catalog.ships.find((model) => model.id === selectedForSaleShipId) || null;
+    const forSaleView = forSaleShip ? catalogShipAsHangar(forSaleShip) : null;
+    const containers = ship?.containers ?? [];
+    const selectedSlot = ship?.slots.find((slot) => Number(slot.id) === selectedSlotId) || null;
+    const selectedContainer = containers.find((container) => container.id === selectedContainerId) || null;
+    const selectedInstance = findInstance(ship, selectedInstanceId);
+    const selectedCargoContainer = selectedCargo
+        ? containers.find((container) => container.id === selectedCargo.containerId) || null
         : null;
-    const selectedForSaleShip = catalog.ships.find((ship) => ship.id === selectedForSaleShipId) || null;
+    const selectedCargoLine = selectedCargo && selectedCargoContainer
+        ? selectedCargoContainer.cargo.find((line) => line.resource_id === selectedCargo.resourceId) || null
+        : null;
 
-    useEffect(() => {
-        if (showShipsForSale && selectedForSaleShip) {
-            const shipPrice = Number(selectedForSaleShip.price_buy || 0);
-            const userCredits = hangar ? Number(hangar.credits || 0) : 0;
-            if (hangar != null && userCredits >= shipPrice) {
-                setTradeAction('buy_ship');
-                setIsActionTriggered(true);
-            } else {
-                setTradeAction(null);
-                setIsActionTriggered(false);
-            }
-        } else if (selectedSlotRowId !== 0 && selectedItem != null) {
-            setTradeAction('sell_equipment');
-            setIsActionTriggered(true);
-        } else if (selectedItemId !== null && selectedItem != null) {
-            const itemPrice = Number(selectedItem.price_buy || 0);
-            const userCredits = hangar ? Number(hangar.credits || 0) : 0;
-            const isEquipment = catalog.equipments.some((entry) => entry.id === selectedItem.id);
+    const allItems: CatalogItem[] = activeTab === 'resources'
+        ? catalog.resources
+        : activeTab === 'equipment' ? catalog.equipments : [...catalog.equipments, ...catalog.resources];
 
-            if (isEquipment) {
-                const activeShip = hangar?.ships?.[0];
-                const massPropId = catalog.settings.id_propert_mass_value;
-                const equipmentMass = Number(getCatalogPropertyValue(selectedItem, massPropId) || 0);
-
-                const hasFreeSlot = activeShip?.slots?.some(
-                    (s) => Number(s.slot_id) === Number(selectedItem.slotId) && s.equipment_id == null
-                );
-                const hasFreeHold = activeShip?.holds?.some(
-                    (h) => (Number(h.capacity_mass || 0) - Number(h.occupied_mass || 0)) >= equipmentMass
-                );
-
-                const canPlace = Boolean(hasFreeSlot || hasFreeHold);
-
-                if (hangar != null && itemPrice > 0 && userCredits >= itemPrice && canPlace) {
-                    setTradeAction('buy_equipment');
-                    setIsActionTriggered(true);
-                } else {
-                    setTradeAction(null);
-                    setIsActionTriggered(false);
-                }
-            } else {
-                if (hangar != null && itemPrice > 0 && userCredits >= itemPrice) {
-                    setTradeAction('buy_resource');
-                    setIsActionTriggered(true);
-                } else {
-                    setTradeAction(null);
-                    setIsActionTriggered(false);
-                }
-            }
-        } else if (!showShipsForSale && userShips.length > 0 && selectedSlotRowId === 0) {
-            if (userShips.length > 1) {
-                setTradeAction('sell_ship');
-                setIsActionTriggered(true);
-            } else {
-                setTradeAction(null);
-                setIsActionTriggered(false);
-            }
-        } else {
-            setTradeAction(null);
-            setIsActionTriggered(false);
-        }
-    }, [showShipsForSale, selectedForSaleShip, selectedItemId, selectedItem, activeTab, hangar, userShips, selectedSlotRowId]);
-
-    async function handleTradeButtonClick() {
-        if (!isActionTriggered || !tradeAction || isTradeProcessing) {
-            console.warn('Действие заблокировано: триггер не установлен или выполняет обработку');
-            return;
-        }
-
-        let optimisticPrice = 0;
-        let isSale = false;
-
-        if (tradeAction === 'buy_ship' && selectedForSaleShip) {
-            optimisticPrice = Number(selectedForSaleShip.price_buy || 0);
-        } else if (tradeAction === 'sell_ship' && ownedShipModel) {
-            optimisticPrice = Number(ownedShipModel.price_sale || 0);
-            isSale = true;
-        } else if (selectedItem) {
-            optimisticPrice = Number(selectedItem.price_buy || 0);
-        }
-
-        if (optimisticPrice > 0 && hangar && onHangarUpdate) {
-            const currentCreds = Number(hangar.credits || 0);
-            const newCreds = isSale ? currentCreds + optimisticPrice : Math.max(0, currentCreds - optimisticPrice);
-            onHangarUpdate({
-                ...hangar,
-                credits: newCreds,
-            });
-        }
-
-        setIsTradeProcessing(true);
-        try {
-            let payload: Record<string, unknown> = {};
-            if (tradeAction === 'buy_ship' && selectedForSaleShip) {
-                payload = {shipModelId: selectedForSaleShip.id};
-            } else if (tradeAction === 'sell_ship' && ownedShip) {
-                payload = {userShipId: ownedShip.id};
-            } else if (tradeAction === 'buy_equipment' && selectedItem) {
-                payload = {equipmentModelId: selectedItem.id};
-            }
-
-            const response = await executeTrade(token, tradeAction, payload);
-            console.log('[CLIENT TRADE RESPONSE]', response);
-
-            if (response.hangar && onHangarUpdate) {
-                onHangarUpdate(response.hangar);
-            }
-            if (response.boughtShip) {
-                setSelectedOwnedShipId(response.boughtShip.id);
-                setShowShipsForSale(false);
-            } else if (tradeAction === 'sell_ship') {
-                const remaining = response.hangar?.ships?.find((s) => String(s.id) !== String(ownedShip?.id));
-                if (remaining) {
-                    setSelectedOwnedShipId(remaining.id);
-                }
-            }
-        } catch (cause) {
-            console.error('Ошибка выполнения торгового действия:', cause);
-            if (optimisticPrice > 0 && hangar && onHangarUpdate) {
-                const currentCreds = Number(hangar.credits || 0);
-                const restoredCreds = isSale ? Math.max(0, currentCreds - optimisticPrice) : currentCreds + optimisticPrice;
-                onHangarUpdate({
-                    ...hangar,
-                    credits: restoredCreds,
-                });
-            }
-        } finally {
-            setIsTradeProcessing(false);
-        }
+    // Клик по креплению оставляет в списке только совместимое оборудование,
+    // клик по контейнеру — только ресурсы, которые он принимает.
+    let visibleItems = allItems;
+    if (selectedSlot) {
+        visibleItems = catalog.equipments.filter((item) => Number(item.slotId ?? 0) === Number(selectedSlot.slot_type_id));
+    } else if (selectedContainer) {
+        const allowed = selectedContainer.allowed.map((name) => name.trim().toLowerCase());
+        visibleItems = catalog.resources.filter((item) => allowed.includes(item.name.trim().toLowerCase()));
     }
-    const ownedShips: DockShip[] = userShips.length
-        ? userShips.map((ship) => ({
-            id: ship.id,
-            name: catalog.ships.find((model) => model.id === ship.ship_id)?.name || `Корабль ${ship.ship_id}`,
-            isForSale: false,
-            modelId: ship.ship_id,
-        }))
-        : hangar?.ship_id
-            ? [{id: String(hangar.ship_id), name: shipName, isForSale: false}]
-            : [];
-    const ownedShipRows = ownedShip
-        ? [
-            {label: 'Состояние', value: ownedShip.status === 1 ? 'РАЗРУШЕН' : 'В СТРОЮ'},
-            {label: 'Прочность корпуса', value: formatNumber(ownedShip.health)},
-            {label: 'Щиты', value: formatNumber(ownedShip.shield)},
-            {label: 'Кредиты', value: `${credits} ¤`},
-        ]
-        : [
-            {label: 'Пилот', value: email},
-            {label: 'Состояние', value: 'ГОТОВ'},
-            {label: 'Кредиты', value: `${credits} ¤`},
-        ];
-    const dockShips: DockShip[] = showShipsForSale
-        ? catalog.ships.map((ship) => ({...ship, isForSale: true}))
-        : ownedShips;
-    const visibleDockShips = dockShips.slice(shipGalleryStart, shipGalleryStart + visibleShipCount);
-    const canShowPreviousShips = shipGalleryStart > 0;
-    const canShowNextShips = shipGalleryStart + visibleShipCount < dockShips.length;
-    const selectedItemTab: CatalogTab = selectedItem && activeTab === 'all'
-        ? catalog.equipments.some((equipment) => equipment === selectedItem) ? 'equipment' : 'resources'
-        : activeTab;
-    const selectedItemCategory = selectedItem
-        ? catalogCategories[selectedItemTab].find((category) => category.id === selectedItem.categoryId)
-        : undefined;
-    const groupedItems = visibleItems.reduce<Array<{id: string; name: string; icon: string; items: CatalogItem[]}>>(
-        (groups, item) => {
-            const itemTab: CatalogTab = activeTab === 'all'
-                ? catalog.equipments.some((equipment) => equipment === item) ? 'equipment' : 'resources'
-                : activeTab;
-            const category = catalogCategories[itemTab].find((entry) => entry.id === item.categoryId);
-            const groupId = `${itemTab}:${category?.id ?? 'other'}`;
-            let group = groups.find((entry) => entry.id === groupId);
-            if (!group) {
-                group = {
-                    id: groupId,
-                    name: category?.name || tabLabels[itemTab],
-                    icon: category?.icon || 'grid',
-                    items: [],
-                };
-                groups.push(group);
-            }
-            group.items.push(item);
-            return groups;
-        },
-        [],
-    );
+    if (activeCategory !== null) {
+        visibleItems = visibleItems.filter((item) => item.categoryId === activeCategory);
+    }
 
-    // Определяем вместимость галереи по её фактической ширине с уже зарезервированными стрелками.
+    const selectedItem = selectedItemId !== null
+        ? [...catalog.equipments, ...catalog.resources].find((item) => item.id === selectedItemId) || null
+        : null;
+    const selectedItemIsEquipment = Boolean(selectedItem && catalog.equipments.some((item) => item.id === selectedItem.id));
+
+    const placement = selectedItem && selectedItemIsEquipment && ship
+        ? resolvePlacement(ship, selectedItem, selectedSlotId)
+        : null;
+    const containerChoice = selectedItem && !selectedItemIsEquipment
+        ? resolveContainer(ship, selectedItem, selectedContainerId)
+        : {target: null, reason: 'none' as const};
+
+    const offer = showShipsForSale && forSaleShip;
+    const buyPrice = offer
+        ? priceOf(forSaleShip, 'price_buy')
+        : selectedItem ? priceOf(selectedItem, 'price_buy') : 0;
+
+    // Причина, по которой кнопка заблокирована: показывается над кнопкой, а не в модальном окне.
+    let blocker = '';
+    if (!hangar) {
+        blocker = 'Ангар ещё не загружен.';
+    } else if (offer) {
+        if (credits < buyPrice) blocker = `Недостаточно кредитов: нужно ${formatNumber(buyPrice)} ¤, у вас ${formatNumber(credits)} ¤.`;
+    } else if (selectedItem && selectedItemIsEquipment) {
+        if (!placement) blocker = 'Нет свободного крепления и места в трюме.';
+        else if (credits < buyPrice) blocker = `Недостаточно кредитов: нужно ${formatNumber(buyPrice)} ¤, у вас ${formatNumber(credits)} ¤.`;
+    } else if (selectedItem) {
+        if (containerChoice.reason === 'none') blocker = 'Нет контейнера для этого ресурса.';
+        else if (containerChoice.reason === 'full') blocker = 'В контейнере нет места.';
+        else if (credits < buyPrice) blocker = `Недостаточно кредитов: нужно ${formatNumber(buyPrice)} ¤, у вас ${formatNumber(credits)} ¤.`;
+    }
+
+    const canBuy = Boolean(hangar) && !blocker && (offer || Boolean(selectedItem)) && !isTradeProcessing;
+
+    // Оборудование и груз на выбранном корабле для третьей колонки и разбивки продажи.
+    const instances = shipInstances(ship);
+    const equipmentSalePrice = instances.reduce((total, instance) =>
+        total + priceOf(catalog.equipments.find((model) => model.id === instance.model_id), 'price_sale'), 0);
+    const cargoSalePrice = instances.reduce((total, instance) =>
+        total + instance.cargo.reduce((sum, line) => sum + line.amount_kg * line.price_sale, 0), 0);
+    const cargoKg = instances.reduce((total, instance) =>
+        total + instance.cargo.reduce((sum, line) => sum + line.amount_kg, 0), 0);
+    const shipSalePrice = priceOf(catalog.ships.find((model) => model.id === ship?.ship_model_id), 'price_sale');
+
+    // Категории идут рядами: оборудование сверху, ресурсы снизу.
+    const categoryRows: Array<{kind: 'equipment' | 'resources'; items: CatalogCategory[]; catalog: CatalogItem[]}> = [];
+    if (activeTab !== 'resources') {
+        categoryRows.push({kind: 'equipment', items: catalog.categoriesEquipment, catalog: catalog.equipments});
+    }
+    if (activeTab !== 'equipment') {
+        categoryRows.push({kind: 'resources', items: catalog.categoriesResource, catalog: catalog.resources});
+    }
+
+    const groups = visibleItems.reduce<Array<{id: string; name: string; icon: string; items: CatalogItem[]}>>((list, item) => {
+        const itemTab: CatalogTab = activeTab === 'all'
+            ? catalog.equipments.some((entry) => entry.id === item.id) ? 'equipment' : 'resources'
+            : activeTab;
+        const category = categoryOf(item, itemTab);
+        const groupId = `${itemTab}:${category?.id ?? 'other'}`;
+        let group = list.find((entry) => entry.id === groupId);
+        if (!group) {
+            group = {
+                id: groupId,
+                name: category?.name || tabLabels[itemTab],
+                icon: category?.icon || 'grid',
+                items: [],
+            };
+            list.push(group);
+        }
+        group.items.push(item);
+        return list;
+    }, []);
+
+    // Галерея дока показывает столько карточек, сколько помещается по фактической ширине.
     useEffect(() => {
-        const shipList = shipListRef.current;
-        if (!shipList) return;
-
-        const updateVisibleShipCount = () => {
-            const styles = window.getComputedStyle(shipList);
+        const host = shipListRef.current;
+        if (!host) return;
+        const measure = () => {
+            const styles = window.getComputedStyle(host);
             const cardWidth = Number.parseFloat(styles.getPropertyValue('--ship-gallery-card-width'));
             const gap = Number.parseFloat(styles.columnGap) || 0;
             if (!Number.isFinite(cardWidth) || cardWidth <= 0) return;
-
-            const count = Math.max(1, Math.floor((shipList.clientWidth + gap) / (cardWidth + gap)));
-            setVisibleShipCount(count);
+            setVisibleShipCount(Math.max(1, Math.floor((host.clientWidth + gap) / (cardWidth + gap))));
         };
-
-        updateVisibleShipCount();
-        const observer = new ResizeObserver(updateVisibleShipCount);
-        observer.observe(shipList);
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(host);
         return () => observer.disconnect();
     }, []);
+
+    const dockShips = showShipsForSale
+        ? catalog.ships.map((model) => ({
+            id: model.id as number | string,
+            name: model.name,
+            isForSale: true,
+            price: priceOf(model, 'price_buy'),
+            modelId: model.id,
+        }))
+        : ships.map((row) => ({
+            id: row.id,
+            name: row.name,
+            isForSale: false,
+            price: 0,
+            modelId: row.ship_model_id,
+        }));
 
     useEffect(() => {
         setShipGalleryStart((start) => Math.min(start, Math.max(0, dockShips.length - visibleShipCount)));
     }, [dockShips.length, visibleShipCount]);
 
-    // Escape открывает меню аккаунта, а в открытом меню закрывает его повторно.
+    // Escape: закрыть диалог, меню аккаунта или вылететь — как обещает подпись кнопки.
     useEffect(() => {
-        function handleKeyDown(event: KeyboardEvent) {
+        function onKeyDown(event: KeyboardEvent) {
             if (event.key !== 'Escape' || deletingAccount) return;
+            if (confirm) {
+                setConfirm(null);
+                return;
+            }
+            if (accountOpen) {
+                setAccountOpen(false);
+                return;
+            }
             event.preventDefault();
-            setLogoutDialogOpen((isOpen) => !isOpen);
+            onLaunch();
         }
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [confirm, accountOpen, deletingAccount, onLaunch]);
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [deletingAccount]);
+    // Подсказка ставится рядом с элементом: справа, а если не влезает — слева.
+    useLayoutEffect(() => {
+        const target = tip?.target;
+        const box = tipRef.current;
+        if (!target || !box) return;
 
-    // Переключение типа каталога сбрасывает выбранную подкатегорию и товар.
+        const rect = target.getBoundingClientRect();
+        const width = box.offsetWidth;
+        const height = box.offsetHeight;
+        let left = rect.right + 10;
+        if (left + width > window.innerWidth - 8) left = Math.max(8, rect.left - width - 10);
+        const top = Math.min(window.innerHeight - height - 8, Math.max(8, rect.top));
+        box.style.left = `${left}px`;
+        box.style.top = `${top}px`;
+        setTipPlaced(true);
+    }, [tip]);
+
+    function showTip(target: HTMLElement, content: TipContent) {
+        setTipPlaced(false);
+        setTip({target, content});
+    }
+
+    function hideTip() {
+        setTip(null);
+        setTipPlaced(false);
+    }
+
+    function clearSelection() {
+        setSelectedSlotId(null);
+        setSelectedContainerId(null);
+        setSelectedItemId(null);
+        setSelectedInstanceId(null);
+        setSelectedCargo(null);
+        setMessage('');
+    }
+
     function selectTab(tab: CatalogTab) {
         setShowShipsForSale(false);
         setActiveTab(tab);
         setActiveCategory(null);
-        setSelectedItemId(null);
-        setSelectedSlotId(null);
-        setSelectedSlotRowId(0);
+        clearSelection();
     }
 
-    // Показывает в торговом списке только оборудование, подходящее выбранному слоту, и подсвечивает категорию.
-    function openCompatibleGoods(slotTypeId: number, slotRowId?: number) {
-        const compatibleGoods = catalog.equipments.filter((item) => item.slotId === slotTypeId);
-        const firstCompatible = compatibleGoods[0];
-
+    // Клик по креплению: пустое — показываем совместимое оборудование, занятое — сам предмет.
+    function handleSlotClick(slot: HangarSlot) {
         setShowShipsForSale(false);
-        if (slotRowId != null) {
-            setSelectedSlotRowId(Number(slotRowId));
+        setMessage('');
+        setSelectedCargo(null);
+        setSelectedContainerId(null);
+        if (slot.instance_id) {
+            const instance = findInstance(ship, slot.instance_id);
+            // Контейнер открывает свои ресурсы, обычный предмет — карточку продажи.
+            if (instance?.is_container) {
+                handleContainerClick(instance);
+                return;
+            }
+            setSelectedSlotId(null);
+            setSelectedItemId(null);
+            setSelectedInstanceId(slot.instance_id);
+            return;
         }
+        const slotTypeId = Number(slot.slot_type_id);
+        const compatible = catalog.equipments.filter((item) => Number(item.slotId ?? 0) === slotTypeId);
+        setSelectedInstanceId(null);
+        setSelectedSlotId(Number(slot.id));
         setActiveTab('equipment');
-        setActiveCategory(firstCompatible?.categoryId ?? null);
-        setSelectedSlotId(slotTypeId);
-        setSelectedItemId(firstCompatible?.id ?? null);
+        setActiveCategory(null);
+        setSelectedItemId(compatible[0]?.id ?? null);
     }
 
-    function handleSlotSelect(slotTypeId: number, slotRowId?: number, slotEquipmentId?: number | null) {
-        if (slotRowId != null) {
-            setSelectedSlotRowId(Number(slotRowId));
-        }
-        if (slotEquipmentId != null) {
-            const installedItem = catalog.equipments.find((item) => item.id === slotEquipmentId);
-            setShowShipsForSale(false);
-            setSelectedSlotId(slotTypeId);
-            setSelectedItemId(slotEquipmentId);
-            setActiveTab('equipment');
-            setActiveCategory(installedItem?.categoryId ?? null);
-            setTradeAction('sell_equipment');
-            setIsActionTriggered(true);
-        } else {
-            openCompatibleGoods(slotTypeId, slotRowId);
+    // Клик по контейнеру: в списке остаются ресурсы, которые он принимает, справа — его карточка.
+    function handleContainerClick(instance: HangarEquipmentInstance) {
+        setShowShipsForSale(false);
+        setMessage('');
+        setSelectedSlotId(null);
+        setSelectedItemId(null);
+        setSelectedInstanceId(null);
+        setSelectedCargo(null);
+        setSelectedContainerId(instance.id);
+        setActiveTab('resources');
+        setActiveCategory(null);
+    }
+
+    function handleInstanceClick(instance: HangarEquipmentInstance) {
+        setShowShipsForSale(false);
+        setMessage('');
+        setSelectedSlotId(null);
+        setSelectedContainerId(null);
+        setSelectedItemId(null);
+        setSelectedCargo(null);
+        setSelectedInstanceId(instance.id);
+    }
+
+    function handleCargoClick(instance: HangarEquipmentInstance, line: HangarCargoLine) {
+        setShowShipsForSale(false);
+        setMessage('');
+        setSelectedSlotId(null);
+        setSelectedContainerId(null);
+        setSelectedItemId(null);
+        setSelectedInstanceId(null);
+        setActiveTab('resources');
+        setSelectedCargo({containerId: instance.id, resourceId: line.resource_id});
+    }
+
+    function handleItemClick(item: CatalogItem) {
+        setShowShipsForSale(false);
+        setMessage('');
+        setSelectedInstanceId(null);
+        setSelectedCargo(null);
+        setSelectedItemId(item.id);
+    }
+
+    async function runTrade(action: TradeActionType, payload: Record<string, unknown>) {
+        if (!hangar || isTradeProcessing) return;
+        setIsTradeProcessing(true);
+        setMessage('');
+        try {
+            const response = await executeTrade(token, action, payload);
+            if (response.hangar) onHangarUpdate?.(response.hangar);
+
+            if (action === 'buy_ship') {
+                // Купленный корабль появляется в доке, но выбранным остаётся прежний:
+                // режим покупки закрывается, игрок возвращается к своему кораблю.
+                setShowShipsForSale(false);
+                setSaleReturnShipId(null);
+                clearSelection();
+            } else if (action === 'sell_ship') {
+                setSelectedShipId(null);
+                clearSelection();
+            } else if (action === 'buy_equipment') {
+                const instanceId = Number(response.receipt?.instanceId ?? 0);
+                clearSelection();
+                if (instanceId) setSelectedInstanceId(instanceId);
+            } else if (action === 'sell_equipment') {
+                clearSelection();
+            } else if (action === 'buy_resource') {
+                const containerId = Number(response.receipt?.containerInstanceId ?? 0);
+                setMessage('');
+                if (containerId) setSelectedContainerId(containerId);
+                setSelectedItemId(null);
+            } else if (action === 'sell_resource') {
+                const containerId = Number(response.receipt?.containerInstanceId ?? 0);
+                const left = Number(response.receipt?.leftKg ?? 0);
+                if (left <= 0) {
+                    setSelectedCargo(null);
+                } else {
+                    setSelectedCargo({containerId, resourceId: Number(response.receipt?.resourceId ?? 0)});
+                }
+            }
+            setConfirm(null);
+        } catch (cause) {
+            const text = cause instanceof ApiError || cause instanceof Error
+                ? cause.message
+                : 'Не удалось выполнить действие.';
+            setMessage(text);
+            setConfirm(null);
+        } finally {
+            setIsTradeProcessing(false);
         }
     }
 
-    // Ошибка удаления остаётся в диалоге, чтобы пользователь мог повторить запрос.
+    function handleBuy() {
+        if (!canBuy) return;
+        if (offer && forSaleShip) {
+            void runTrade('buy_ship', {shipModelId: forSaleShip.id});
+            return;
+        }
+        if (!selectedItem || !ship) return;
+        if (selectedItemIsEquipment) {
+            const payload: Record<string, unknown> = {
+                userShipId: ship.id,
+                equipmentModelId: selectedItem.id,
+            };
+            if (placement?.kind === 'slot') payload.slotId = placement.id;
+            if (placement?.kind === 'hold') payload.holdId = placement.id;
+            void runTrade('buy_equipment', payload);
+            return;
+        }
+        const payload: Record<string, unknown> = {userShipId: ship.id, resourceId: selectedItem.id};
+        if (containerChoice.target) payload.containerInstanceId = containerChoice.target.id;
+        void runTrade('buy_resource', payload);
+    }
+
+    // Продажа экземпляра: контейнер с грузом требует подтверждения и уходит вместе с грузом.
+    function sellInstance(instance: HangarEquipmentInstance) {
+        setMessage('');
+        if (instance.cargo.length > 0) setConfirm({kind: 'container', instanceId: instance.id});
+        else void runTrade('sell_equipment', {userShipId: ship?.id, equipmentInstanceId: instance.id});
+    }
+
     async function handleDeleteAccount() {
         setDeletingAccount(true);
         setDeleteError('');
@@ -817,6 +786,114 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
             setDeleteError(cause instanceof Error ? cause.message : 'Не удалось удалить аккаунт.');
             setDeletingAccount(false);
         }
+    }
+
+    const confirmInstance = confirm?.kind === 'container' ? findInstance(ship, confirm.instanceId) : null;
+
+    // Карточка корабля: одинаково рисуется для своего корабля и для модели в продаже.
+    function renderShipCard(view: HangarShip, subtitle: string, interactive: boolean) {
+        return (
+                                    <>
+                                        <strong className="ship-title">{view.name}</strong>
+                                        <span className="ship-sub ship-meta-line">{subtitle}</span>
+                                        <div className="ship-rows">
+                                            {catalog.ships.find((model) => model.id === view.ship_model_id)?.values
+                                                && Object.entries(catalog.ships.find((model) => model.id === view.ship_model_id)!.values!)
+                                                    .map(([id, value]) => {
+                                                        const property = catalog.properties.find((entry) => entry.id === Number(id));
+                                                        if (!property) return null;
+                                                        return (
+                                                            <div className="ship-row" key={id}>
+                                                                <span>{property.name}</span>
+                                                                <b>{formatNumber(value)} {property.unit && <small>{property.unit}</small>}</b>
+                                                            </div>
+                                                        );
+                                                    })}
+                                            <div className="ship-row"><span>Оборудование</span>
+                                                <b>{formatNumber(view.mass.equipment)} <small>кг</small></b></div>
+                                            <div className="ship-row"><span>Груз</span>
+                                                <b>{formatNumber(view.mass.cargo)} <small>кг</small></b></div>
+                                        </div>
+
+                                        <span className="ship-sub">Трюмы · {view.holds.length}</span>
+                                        <div className="hold-list">
+                                            {view.holds.map((hold) => (
+                                                <HoldBlock key={hold.id} hold={hold}
+                                                           selectedInstanceId={selectedInstanceId}
+                                                           selectedCargo={selectedCargo}
+                                                           onInstanceClick={interactive ? handleInstanceClick : noop}
+                                                           onContainerClick={interactive ? handleContainerClick : noop}
+                                                           onCargoClick={interactive ? handleCargoClick : noop}
+                                                           onShowTip={showTip}
+                                                           onHideTip={hideTip}/>
+                                            ))}
+                                        </div>
+
+                                        <span className="ship-sub">Крепления · {view.slots.length}</span>
+                                        <div className="slot-grid">
+                                            {view.slots.map((slot) => {
+                                                const compatible = catalog.equipments
+                                                    .some((item) => Number(item.slotId ?? 0) === Number(slot.slot_type_id));
+                                                const isEmpty = !slot.instance_id;
+                                                const slotInstance = slot.instance_id ? findInstance(view, slot.instance_id) : null;
+                                                return (
+                                                    <button
+                                                        key={`slot-${slot.id}`}
+                                                        type="button"
+                                                        className={`slot-tile${isEmpty ? ' empty' : ''}${isEmpty && compatible ? ' has-goods' : ''}`
+                                                            + (selectedSlotId === Number(slot.id) ? ' selected' : '')
+                                                            + (slot.instance_id && selectedInstanceId === slot.instance_id ? ' selected' : '')}
+                                                        aria-label={`${slotTypeName(slot.slot_type_id)}: ${slot.name || 'пусто'}`}
+                                                        onMouseEnter={(event) => showTip(event.currentTarget, slotTipContent(slot, compatible))}
+                                                        onMouseLeave={hideTip}
+                                                        onFocus={(event) => showTip(event.currentTarget, slotTipContent(slot, compatible))}
+                                                        onBlur={hideTip}
+                                                        onClick={interactive ? () => handleSlotClick(slot) : undefined}>
+                                                        {slot.name
+                                                            ? <HangarIcon name={slot.icon || 'tool'} size={22}/>
+                                                            : null}
+                                                        {slot.instance_id && (slot.cargo?.length ?? 0) > 0 && (
+                                                            <span className="slot-cargo-chips">
+                                                                {(slot.cargo ?? []).slice(0, 3).map((line) => (
+                                                                    <span key={line.resource_id} className="slot-cargo-chip"
+                                                                          role="button"
+                                                                          tabIndex={0}
+                                                                          aria-label={`${line.name}, ${formatNumber(line.amount_kg)} кг`}
+                                                                          onMouseEnter={(event) => {
+                                                                              if (slotInstance) showTip(event.currentTarget, cargoTipContent(slotInstance, line));
+                                                                          }}
+                                                                          onMouseLeave={(event) => {
+                                                                              const tile = event.currentTarget.closest('.slot-tile');
+                                                                              if (tile) showTip(tile as HTMLElement, slotTipContent(slot, compatible));
+                                                                              else hideTip();
+                                                                          }}
+                                                                          onFocus={(event) => {
+                                                                              if (slotInstance) showTip(event.currentTarget, cargoTipContent(slotInstance, line));
+                                                                          }}
+                                                                          onBlur={hideTip}
+                                                                          onClick={(event) => {
+                                                                              event.stopPropagation();
+                                                                              if (slotInstance) handleCargoClick(slotInstance, line);
+                                                                          }}
+                                                                          onKeyDown={(event) => {
+                                                                              if (event.key !== 'Enter' && event.key !== ' ') return;
+                                                                              event.preventDefault();
+                                                                              event.stopPropagation();
+                                                                              if (slotInstance) handleCargoClick(slotInstance, line);
+                                                                          }}>
+                                                                        <HangarIcon name={line.icon} size={11}/>
+                                                                    </span>
+                                                                ))}
+                                                            </span>
+                                                        )}
+                                                        {slot.mass > 0 && <span className="slot-qty">{formatNumber(slot.mass)} кг</span>}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+
+                                    </>
+        );
     }
 
     return (
@@ -834,20 +911,18 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                         <HangarIcon name="launch" size={13}/>
                         <span className="map-link-label">ВЫЙТИ В КОСМОС <kbd>[Esc]</kbd></span>
                     </button>
-                    <span className="build-badge">v22 · 02.11</span>
                 </div>
                 <div className="station-status">
                     <span className="pulse"/>
-                    <span id="noticeShop">КАТАЛОГ // ПРЕДПРОСМОТР</span>
-                    <span className="divider"/>СЕКТОР A-17
+                    <span id="noticeShop">ТОРГОВЫЙ ТЕРМИНАЛ ПОДКЛЮЧЁН</span>
                 </div>
                 <div className="hangar-header-actions">
                     <div className="balance" title="Баланс пилота">
                         <span><HangarIcon name="credits" size={17}/></span>
-                        <div><small>БАЛАНС</small><strong>{credits} <i>¤</i></strong></div>
+                        <div><small>БАЛАНС</small><strong>{formatNumber(hangar?.credits)} <i>¤</i></strong></div>
                     </div>
                     <button className="map-link hangar-account-link" type="button"
-                            onClick={() => setLogoutDialogOpen(true)} aria-label="Меню аккаунта"
+                            onClick={() => setAccountOpen(true)} aria-label="Меню аккаунта"
                             title={`Аккаунт: ${email}`}>
                         <HangarIcon name="account" size={15}/><span className="map-link-label">АККАУНТ</span>
                     </button>
@@ -856,7 +931,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
 
             <div className="content">
                 <section className="shop-view" id="view-shop">
-                    <div className="market-grid">
+                    <div className={`market-grid${showShipsForSale ? ' no-cargo' : ''}`}>
                         <section className="panel-block glass catalog-panel">
                             <div className="panel-body catalog-body">
                                 <div className="tabs category-tabs" role="tablist" aria-label="Тип каталога">
@@ -871,158 +946,131 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                     ))}
                                 </div>
                                 <div className="catalog-category-list" role="group" aria-label="Категории каталога">
-                                    {categories.length === 0 ? (
-                                        <span className="catalog-category-empty">Оборудование и ресурсы отображаются общим списком</span>
-                                    ) : (
-                                        <>
-                                            <button className={`tab catalog-category${activeCategory === null ? ' active' : ''}`}
-                                                    type="button" onClick={() => {
-                                                        setShowShipsForSale(false);
-                                                        setActiveCategory(null);
-                                                    }}>
-                                                Все
-                                            </button>
-                                            {categories.map((category) => {
-                                                const count = catalogItems[activeTab]
-                                                    .filter((item) => item.categoryId === category.id).length;
+                                    {categoryRows.map((row, rowIndex) => (
+                                        <div className="catalog-category-row" key={row.kind}>
+                                            {rowIndex === 0 && (
+                                                <button className={`tab catalog-category${activeCategory === null ? ' active' : ''}`}
+                                                        type="button" onClick={() => setActiveCategory(null)}>Все</button>
+                                            )}
+                                            {row.items.map((category) => {
+                                                const count = row.catalog.filter((item) => item.categoryId === category.id).length;
                                                 return (
                                                     <button
                                                         className={`tab catalog-category${activeCategory === category.id ? ' active' : ''}`}
                                                         key={category.id} type="button"
                                                         onClick={() => {
-                                                            setShowShipsForSale(false);
-                                                            setActiveCategory(category.id);
                                                             setSelectedItemId(null);
-                                                        }}
-                                                    >
+                                                            setActiveCategory(category.id);
+                                                        }}>
                                                         <HangarIcon name={category.icon} size={13}/>
                                                         <span className="catalog-category-copy"><span>{category.name}</span></span>
                                                         <small className="catalog-category-count">{count}</small>
                                                     </button>
                                                 );
                                             })}
-                                        </>
-                                    )}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </section>
 
+                        {/* Колонка 1: корабль игрока. Выбор в доке меняет именно её. */}
                         <section className="inventory-panel panel-block glass ship-column" id="shipPanel">
                             <div className="ship-panel-body panel-body">
-                                <ShipInformation
-                                    name={shipName}
-                                    meta={ownedShip
-                                        ? `Корабль #${ownedShip.id} · ${ownedShip.status === 1 ? 'разрушен' : 'в строю'}`
-                                        : 'Активный корабль · дата покупки недоступна'}
-                                    model={ownedShipModel}
-                                    shipSlots={ownedShip?.slots}
-                                    shipHolds={ownedShip?.holds}
-                                    rows={ownedShipRows}
-                                    onOpenSlot={handleSlotSelect}
-                                />
+                                {ship ? renderShipCard(ship, `Корабль #${ship.id} · ${ship.status === 1 ? 'разрушен' : 'в строю'} · масса ${formatNumber(ship.mass.total)} кг`, true) : (
+                                    <div className="trade-empty">Корабль ангара ещё не загружен</div>
+                                )}
                                 {error && <p className="error-message" role="alert">{error}</p>}
                             </div>
                         </section>
 
+                        {/* Колонка 2: что можно купить — с учётом выбранного крепления или контейнера. */}
                         <section className="inventory-panel panel-block glass market-column" id="shopPanel">
                             <div className="item-list panel-body">
-                                {groupedItems.length ? groupedItems.map((group) => (
-                                    <div className="list-group" key={group.id ?? 'ships'}>
+                                {groups.length ? groups.map((group) => (
+                                    <div className="list-group" key={group.id}>
                                         <div className="list-group-head">
                                             <span className="list-group-icon"><HangarIcon name={group.icon} size={13}/></span>
                                             <strong>{group.name}</strong><small>{group.items.length}</small>
                                         </div>
                                         {group.items.map((item) => (
-                                            <button className={`item-row${selectedItem?.id === item.id ? ' selected' : ''}`}
-                                                    key={item.id} type="button"
-                                                    onClick={() => {
-                                                        setShowShipsForSale(false);
-                                                        setSelectedSlotRowId(0);
-                                                        setSelectedItemId(item.id);
-                                                    }}>
-                                                <span className={`item-icon ${item.icon || ''}`}>
-                                                    <HangarIcon name={item.icon} size={22}/>
-                                                </span>
+                                            <button
+                                                className={`item-row${selectedItemId === item.id ? ' selected' : ''}`}
+                                                key={item.id} type="button"
+                                                onClick={() => handleItemClick(item)}>
+                                                <span className="item-icon"><HangarIcon name={item.icon} size={22}/></span>
                                                 <span className="item-copy">
                                                     <strong>{item.name}</strong>
-                                                    <span>{item.values?.['3'] ? `Масса ${formatNumber(item.values['3'])} кг` : 'Единица груза'}</span>
+                                                    <span>{massOf(item) > 0
+                                                        ? `Масса ${formatNumber(massOf(item))} кг`
+                                                        : 'Единица груза'}</span>
                                                 </span>
                                                 <span className="item-meta">
                                                     <small>{group.name}</small>
-                                                    {item.price_buy && <b>{formatNumber(item.price_buy)} ¤</b>}
+                                                    {priceOf(item, 'price_buy') > 0 && <b>{formatNumber(item.price_buy)} ¤</b>}
                                                 </span>
                                             </button>
                                         ))}
                                     </div>
                                 )) : (
-                                    <div className="list-empty">В выбранной категории пока нет объектов</div>
+                                    <div className="list-empty">
+                                        {selectedSlot
+                                            ? 'Для этого крепления нет подходящего оборудования'
+                                            : selectedContainer
+                                                ? 'Этот контейнер не принимает доступные ресурсы'
+                                                : 'В выбранной категории пока нет объектов'}
+                                    </div>
                                 )}
                             </div>
                         </section>
 
-                        <section className="inventory-panel panel-block glass cargo-column" id="cargoPanel">
-                            <div className="item-list panel-body">
-                                <div className="list-group-head">
-                                    <span className="list-group-icon"><HangarIcon name="crate" size={13}/></span>
-                                    <strong>ГРУЗ ПИЛОТА</strong><small>0</small>
+                        {/* Колонка 3: содержимое выбранного купленного корабля. */}
+                        {!showShipsForSale && (
+                            <section className="inventory-panel panel-block glass cargo-column" id="cargoPanel">
+                                <div className="item-list panel-body">
+                                    <ContentsList ship={ship}
+                                                  activeTab={activeTab}
+                                                  selectedInstanceId={selectedInstanceId}
+                                                  selectedCargo={selectedCargo}
+                                                  onInstanceClick={handleInstanceClick}
+                                                  onContainerClick={handleContainerClick}
+                                                  onCargoClick={handleCargoClick}/>
                                 </div>
-                                <div className="list-empty">Грузовой инвентарь не подключён к данным аккаунта</div>
-                            </div>
-                        </section>
+                            </section>
+                        )}
 
+                        {/* Колонка 4: карточка выбранного объекта и кнопка действия. */}
                         <section className="inventory-panel shop-panel panel-block glass selection-column">
                             <div className="ship-panel-body shop-panel-body panel-body">
-                                {showShipsForSale && selectedForSaleShip ? (() => {
-                                    const shipPrice = Number(selectedForSaleShip.price_buy || 0);
-                                    const userCredits = hangar ? Number(hangar.credits || 0) : 0;
-                                    const canAffordShip = hangar != null && userCredits >= shipPrice;
-
-                                    return (
-                                        <>
-                                            <ShipInformation
-                                                name={selectedForSaleShip.name}
-                                                meta={`Корпус #${selectedForSaleShip.id} · доступен для покупки`}
-                                                model={selectedForSaleShip}
-                                                onOpenSlot={handleSlotSelect}
-                                            />
-                                            <div className="ship-rows shop-price-rows">
-                                                <div className="ship-row">
-                                                    <span>Цена покупки</span>
-                                                    <b>{formatNumber(selectedForSaleShip.price_buy)} <small>¤</small></b>
-                                                </div>
-                                                <div className="ship-row">
-                                                    <span>Цена продажи</span>
-                                                    <b>{formatNumber(selectedForSaleShip.price_sale)} <small>¤</small></b>
-                                                </div>
-                                            </div>
-                                            <p className="shop-note">
-                                                {canAffordShip
-                                                    ? `Ваш баланс: ${formatNumber(userCredits)} ¤. Достаточно средств.`
-                                                    : `Недостаточно кредитов. Требуется ${formatNumber(shipPrice)} ¤ (у вас ${formatNumber(userCredits)} ¤).`}
-                                            </p>
-                                            <div className="shop-actions">
-                                                <BuyButton
-                                                    type="button"
-                                                    label={tradeAction ? tradeActionLabels[tradeAction] : 'Купить корабль'}
-                                                    disabled={!isActionTriggered || !canAffordShip || isTradeProcessing}
-                                                    onClick={handleTradeButtonClick}
-                                                    title={isTradeProcessing
-                                                        ? 'Выполняется обработка...'
-                                                        : canAffordShip
-                                                        ? `Купить ${selectedForSaleShip.name} за ${formatNumber(shipPrice)} ¤`
-                                                        : `Недостаточно кредитов для покупки (требуется ${formatNumber(shipPrice)} ¤)`}
-                                                />
-                                            </div>
-                                        </>
-                                    );
-                                })() : selectedItem ? (
+                                {offer && forSaleShip && forSaleView ? (
+                                    <>
+                                        {renderShipCard(forSaleView,
+                                            `Корпус #${forSaleShip.id} · доступен для покупки · масса ${formatNumber(forSaleView.mass.total)} кг`,
+                                            false)}
+                                        <div className="ship-rows shop-price-rows">
+                                            <div className="ship-row"><span>Цена покупки</span>
+                                                <b>{formatNumber(priceOf(forSaleShip, 'price_buy'))} ¤</b></div>
+                                            <div className="ship-row"><span>Цена продажи</span>
+                                                <b>{formatNumber(priceOf(forSaleShip, 'price_sale'))} ¤</b></div>
+                                        </div>
+                                        <p className="shop-note">Ваш баланс: {formatNumber(credits)} ¤.</p>
+                                        <TradeErrorLine text={message || blocker}/>
+                                        <div className="shop-actions">
+                                            <BuyButton type="button" label={actionLabels.buy_ship}
+                                                       disabled={!canBuy || isTradeProcessing}
+                                                       onClick={handleBuy}
+                                                       title={blocker || `Купить ${forSaleShip.name}`}/>
+                                        </div>
+                                    </>
+                                ) : selectedItem ? (
                                     <>
                                         <span className="ship-sub">
-                                            {selectedItemCategory?.name || tabLabels[selectedItemTab]}
+                                            {categoryOf(selectedItem, selectedItemIsEquipment ? 'equipment' : 'resources')?.name
+                                                || tabLabels[selectedItemIsEquipment ? 'equipment' : 'resources']}
                                         </span>
                                         <strong className="ship-title">{selectedItem.name}</strong>
                                         <div className="ship-rows">
-                                            {selectedItem.values && Object.entries(selectedItem.values).map(([id, value]) => {
+                                            {Object.entries(selectedItem.values ?? {}).map(([id, value]) => {
                                                 const property = catalog.properties.find((entry) => entry.id === Number(id));
                                                 if (!property) return null;
                                                 return (
@@ -1032,205 +1080,276 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                                     </div>
                                                 );
                                             })}
-                                            {selectedItem.slotId != null && (
+                                            {selectedItemIsEquipment ? (
                                                 <div className="ship-row">
-                                                    <span>Слот</span>
-                                                    <b>{catalog.slots.find((slot) => slot.id === selectedItem.slotId)?.name || '—'}</b>
+                                                    <span>Крепление</span>
+                                                    <b>{catalog.slots.find((slot) => slot.id === Number(selectedItem.slotId))?.name || 'в трюм'}</b>
                                                 </div>
-                                            )}
+                                            ) : null}
                                             <div className="ship-row">
-                                                <span>Место</span><b>Торговый терминал</b>
+                                                <span>{selectedItemIsEquipment ? 'Встанет в' : 'Контейнер'}</span>
+                                                <b>
+                                                    {selectedItemIsEquipment
+                                                        ? placement
+                                                            ? placement.kind === 'slot'
+                                                                ? `Крепление ${placement.index + 1}`
+                                                                : `Трюм ${placement.index + 1}`
+                                                            : 'нет места'
+                                                        : containerChoice.target
+                                                            ? `${containerChoice.target.name} · свободно ${formatNumber(containerChoice.target.free_kg)} кг`
+                                                            : containerChoice.reason === 'full' ? 'нет места' : 'нет контейнера'}
+                                                </b>
                                             </div>
                                         </div>
+                                        {selectedItemIsEquipment && isCatalogContainer(selectedItem) && (
+                                            <>
+                                                <span className="ship-sub">Можно положить</span>
+                                                <AllowedList names={selectedItem.prop2 ?? []}/>
+                                            </>
+                                        )}
                                         <div className="ship-rows shop-price-rows">
-                                            <div className="ship-row">
-                                                <span>Цена покупки</span>
-                                                <b>{formatNumber(selectedItem.price_buy)} <small>¤</small></b>
-                                            </div>
-                                            <div className="ship-row">
-                                                <span>Цена продажи</span>
-                                                <b>{formatNumber(selectedItem.price_sale)} <small>¤</small></b>
-                                            </div>
+                                            <div className="ship-row"><span>Цена покупки</span>
+                                                <b>{formatNumber(buyPrice)} ¤{!selectedItemIsEquipment && <small> / кг</small>}</b></div>
+                                            <div className="ship-row"><span>Цена продажи</span>
+                                                <b>{formatNumber(priceOf(selectedItem, 'price_sale'))} ¤{!selectedItemIsEquipment && <small> / кг</small>}</b></div>
                                         </div>
                                         <p className="shop-note">
-                                            {isActionTriggered
-                                                ? `Ваш баланс: ${formatNumber(hangar?.credits)} ¤. ${tradeAction === 'sell_equipment' ? 'Нажмите для продажи.' : 'Нажмите для покупки.'}`
-                                                : `Выберите предмет или проверьте баланс кредитов.`}
+                                            {selectedSlot
+                                                ? `Крепление ${selectedSlot.slot_index + 1}: показано только совместимое оборудование.`
+                                                : selectedContainer
+                                                    ? `Контейнер «${selectedContainer.name}»: показаны только принимаемые ресурсы.`
+                                                    : 'Покупка идёт на выбранный корабль.'}
                                         </p>
+                                        <TradeErrorLine text={message || blocker}/>
                                         <div className="shop-actions">
-                                            {tradeAction === 'sell_equipment' || selectedSlotRowId !== 0 ? (
-                                                <SellButton
-                                                    type="button"
-                                                    label={tradeAction ? tradeActionLabels[tradeAction] : 'Продать оборудование'}
-                                                    disabled={!isActionTriggered || isTradeProcessing}
-                                                    onClick={handleTradeButtonClick}
-                                                    title={isActionTriggered
-                                                        ? `Продать ${selectedItem.name} из слота #${selectedSlotRowId}`
-                                                        : `Продажа недоступна`}
-                                                />
-                                            ) : (
-                                                <BuyButton
-                                                    type="button"
-                                                    label={tradeAction ? tradeActionLabels[tradeAction] : 'Купить'}
-                                                    disabled={!isActionTriggered || isTradeProcessing}
-                                                    onClick={handleTradeButtonClick}
-                                                    title={isActionTriggered
-                                                        ? `Купить ${selectedItem.name} за ${formatNumber(selectedItem.price_buy)} ¤`
-                                                        : `Покупка недоступна`}
-                                                />
-                                            )}
+                                            <BuyButton type="button"
+                                                       label={selectedItemIsEquipment ? actionLabels.buy_equipment : actionLabels.buy_resource}
+                                                       disabled={!canBuy} onClick={handleBuy}
+                                                       title={blocker || `Купить ${selectedItem.name}`}/>
                                         </div>
                                     </>
-                                ) : !showShipsForSale && ownedShip ? (() => {
-                                    const salePrice = Number(ownedShipModel?.price_sale || 0);
-                                    const canSellShip = userShips.length > 1;
-
-                                    return (
-                                        <>
-                                            <ShipInformation
-                                                name={ownedShipModel?.name || `Корабль ${ownedShip.ship_id}`}
-                                                meta={ownedShip ? `Корабль #${ownedShip.id} · ${ownedShip.status === 1 ? 'разрушен' : 'в строю'}` : 'Активный корабль'}
-                                                model={ownedShipModel}
-                                                shipSlots={ownedShip?.slots}
-                                                shipHolds={ownedShip?.holds}
-                                                rows={ownedShipRows}
-                                                onOpenSlot={handleSlotSelect}
-                                            />
-                                            <div className="ship-rows shop-price-rows">
-                                                <div className="ship-row">
-                                                    <span>Цена продажи</span>
-                                                    <b>{formatNumber(salePrice)} <small>¤</small></b>
-                                                </div>
-                                            </div>
-                                            <p className="shop-note">
-                                                {canSellShip
-                                                    ? `Нажмите для продажи корабля за ${formatNumber(salePrice)} ¤.`
-                                                    : `Невозможно продать единственный корабль во флоте.`}
-                                            </p>
-                                            <div className="shop-actions">
-                                                <SellButton
-                                                    type="button"
-                                                    label={tradeAction ? tradeActionLabels[tradeAction] : 'Продать корабль'}
-                                                    disabled={!canSellShip || isTradeProcessing}
-                                                    onClick={handleTradeButtonClick}
-                                                    title={isTradeProcessing
-                                                        ? 'Выполняется обработка...'
-                                                        : canSellShip
-                                                        ? `Продать ${ownedShipModel?.name || 'корабль'} за ${formatNumber(salePrice)} ¤`
-                                                        : 'Невозможно продать единственный корабль'}
-                                                />
-                                            </div>
-                                        </>
-                                    );
-                                })() : (
+                                ) : selectedInstance ? (
+                                    selectedInstance.is_container ? (
+                                        <ContainerCard container={selectedInstance}
+                                                       message={message || blocker}
+                                                       busy={isTradeProcessing}
+                                                       onCargoClick={(line) => handleCargoClick(selectedInstance, line)}
+                                                       onSell={() => sellInstance(selectedInstance)}/>
+                                    ) : (
+                                        <InstanceCard instance={selectedInstance}
+                                                      message={message || blocker}
+                                                      busy={isTradeProcessing}
+                                                      onSell={() => sellInstance(selectedInstance)}/>
+                                    )
+                                ) : selectedCargoLine && selectedCargoContainer ? (
+                                    <CargoCard line={selectedCargoLine} container={selectedCargoContainer}
+                                               message={message || blocker} busy={isTradeProcessing}
+                                               onSell={() => void runTrade('sell_resource', {
+                                                   userShipId: ship?.id,
+                                                   containerInstanceId: selectedCargoContainer.id,
+                                                   resourceId: selectedCargoLine.resource_id,
+                                               })}/>
+                                ) : selectedContainer ? (
+                                    <ContainerCard container={selectedContainer} message={message || blocker}
+                                                   busy={isTradeProcessing}
+                                                   onCargoClick={(line) => handleCargoClick(selectedContainer, line)}
+                                                   onSell={() => sellInstance(selectedContainer)}/>
+                                ) : ship && selectedShipId !== null ? (
+                                    <ShipSaleCard ship={ship}
+                                                  equipmentCount={instances.length}
+                                                  shipPrice={shipSalePrice}
+                                                  equipmentPrice={equipmentSalePrice}
+                                                  cargoKg={cargoKg}
+                                                  cargoPrice={cargoSalePrice}
+                                                  canSell={ships.length > 1}
+                                                  message={message}
+                                                  busy={isTradeProcessing}
+                                                  onSell={() => {
+                                                      setMessage('');
+                                                      setConfirm({kind: 'ship'});
+                                                  }}/>
+                                ) : ship ? (
+                                    <div className="trade-empty">
+                                        Выберите корабль в доке, крепление, контейнер или объект в списке
+                                    </div>
+                                ) : (
                                     <div className="trade-empty">Выберите объект в каталоге</div>
                                 )}
                             </div>
                         </section>
                     </div>
                 </section>
-                {/**/}
+
                 <section className="panel-block glass dock-panel">
                     <div className="panel-body dock-body">
                         <div className="ship-gallery">
                             <button
-                                className={`ship-gallery-arrow${canShowPreviousShips ? '' : ' unavailable'}`}
-                                type="button"
-                                aria-label="Показать предыдущие корабли"
-                                disabled={!canShowPreviousShips}
-                                onClick={() => setShipGalleryStart((start) => Math.max(0, start - visibleShipCount))}
-                            >
-                                <HangarIcon name="chevron" size={18}/>
+                                className={`ship-gallery-arrow${shipGalleryStart > 0 ? '' : ' unavailable'}`}
+                                type="button" aria-label="Показать предыдущие корабли"
+                                disabled={shipGalleryStart <= 0}
+                                onClick={() => setShipGalleryStart((start) => Math.max(0, start - visibleShipCount))}>
+                                <span style={{transform: 'scaleX(-1)'}}><HangarIcon name="chevron" size={18}/></span>
                             </button>
-                            <div
-                                className="ship-list"
-                                ref={shipListRef}
-                                style={{'--ship-gallery-visible-count': visibleShipCount} as CSSProperties & {
-                                    '--ship-gallery-visible-count': number;
-                                }}
-                                aria-live="polite"
-                            >
-                                {visibleDockShips.length > 0 ? visibleDockShips.map((ship) => (
+                            <div className="ship-list" ref={shipListRef}
+                                 style={{'--ship-gallery-visible-count': visibleShipCount} as CSSProperties}
+                                 aria-live="polite">
+                                {dockShips.slice(shipGalleryStart, shipGalleryStart + visibleShipCount).map((row) => (
                                     <button
-                                        className={`ship-card${ship.isForSale
-                                            ? selectedForSaleShipId === ship.id ? ' selected'
-                                                : ''
+                                        className={`ship-card${row.isForSale
+                                            ? selectedForSaleShipId === row.id ? ' selected' : ''
                                             : ' active'}`}
-                                        key={ship.id}
-                                        type="button"
-                                        aria-current={ship.isForSale
-                                            ? undefined
-                                            : String(ownedShip?.id ?? hangar?.ship_id) === String(ship.id)}
+                                        key={row.id} type="button"
+                                        aria-current={!row.isForSale && String(ship?.id) === String(row.id)}
                                         onClick={() => {
-                                            setSelectedSlotRowId(0);
-                                            setSelectedItemId(null);
-                                            setSelectedSlotId(null);
-                                            if (ship.isForSale) {
-                                                setSelectedForSaleShipId(Number(ship.id));
+                                            setMessage('');
+                                            if (row.isForSale) {
+                                                setSelectedForSaleShipId(Number(row.id));
+                                                setShowShipsForSale(true);
                                             } else {
-                                                console.log('[USER SHIP CLICKED]', ship.id);
-                                                setSelectedOwnedShipId(ship.id);
+                                                setShowShipsForSale(false);
+                                                setSelectedShipId(row.id);
+                                                clearSelection();
                                             }
-                                        }}
-                                    >
+                                        }}>
                                         <div className="ship-visual">
                                             <ShipGlyph compact/>
-                                            {!ship.isForSale && <span className="active-tag">ВЫБРАН</span>}
+                                            {!row.isForSale && String(ship?.id) === String(row.id)
+                                                && <span className="active-tag">ВЫБРАН</span>}
                                         </div>
                                         <div className="ship-meta">
-                                            <strong>{ship.name}</strong>
-                                            <span>
-                                                {ship.isForSale
-                                                    ? `ЦЕНА // ${formatNumber(ship.price_buy)} ¤`
-                                                    : 'АКТИВНЫЙ КОРАБЛЬ'}
-                                            </span>
+                                            <strong>{row.name}</strong>
+                                            <span>{row.isForSale
+                                                ? `ЦЕНА // ${formatNumber(row.price)} ¤`
+                                                : 'В АНГАРЕ'}</span>
                                         </div>
                                     </button>
-                                )) : (
-                                    <div className="ship-gallery-empty">
-                                        {showShipsForSale ? 'Нет кораблей для продажи' : 'Корабль ангара ещё не загружен'}
-                                    </div>
+                                ))}
+                                {dockShips.length === 0 && (
+                                    <div className="ship-gallery-empty">Корабль ангара ещё не загружен</div>
                                 )}
                             </div>
                             <button
-                                className={`ship-gallery-arrow${canShowNextShips ? '' : ' unavailable'}`}
-                                type="button"
-                                aria-label="Показать следующие корабли"
-                                disabled={!canShowNextShips}
+                                className={`ship-gallery-arrow${shipGalleryStart + visibleShipCount < dockShips.length ? '' : ' unavailable'}`}
+                                type="button" aria-label="Показать следующие корабли"
+                                disabled={shipGalleryStart + visibleShipCount >= dockShips.length}
                                 onClick={() => setShipGalleryStart((start) =>
-                                    Math.min(dockShips.length - visibleShipCount, start + visibleShipCount))}
-                            >
+                                    Math.min(dockShips.length - visibleShipCount, start + visibleShipCount))}>
                                 <HangarIcon name="chevron" size={18}/>
                             </button>
                         </div>
-                        <button
-                            className="ship-card ship-buy-card"
-                            type="button"
-                            onClick={() => {
-                                setShowShipsForSale((showingSales) => !showingSales);
-                                setShipGalleryStart(0);
-                            }}
-                            aria-label={showShipsForSale ? 'Показать мои корабли' : 'Показать корабли для продажи'}
-                            title={showShipsForSale ? 'Показать мои корабли' : 'Показать корабли для продажи'}
-                        >
-                            <span className="ship-buy-visual">
-                                <HangarIcon name={showShipsForSale ? 'ship' : 'shipAdd'} size={38}/>
-                            </span>
-                            <span className="ship-buy-label">
-                                {showShipsForSale ? 'МОИ КОРАБЛИ' : 'КУПИТЬ КОРАБЛЬ'}
-                            </span>
-                            <span className="ship-buy-hint">
-                                {showShipsForSale ? 'АНГАР ПИЛОТА' : 'КАТАЛОГ ФЛОТА'}
-                            </span>
+                        <button className="ship-card ship-buy-card" type="button"
+                                onClick={() => {
+                                    if (showShipsForSale) {
+                                        // Возврат к своим кораблям: показываем тот, что был выбран до входа.
+                                        const restore = ships.find((row) => String(row.id) === String(saleReturnShipId))
+                                            || ships.find((row) => String(row.id) === String(selectedShipId))
+                                            || ships[0]
+                                            || null;
+                                        setSelectedShipId(restore ? restore.id : null);
+                                        setSaleReturnShipId(null);
+                                        setShowShipsForSale(false);
+                                    } else {
+                                        setSaleReturnShipId(ship ? ship.id : selectedShipId);
+                                        setShowShipsForSale(true);
+                                    }
+                                    setShipGalleryStart(0);
+                                    clearSelection();
+                                }}
+                                aria-label={showShipsForSale ? 'Показать мои корабли' : 'Показать корабли для продажи'}
+                                title={showShipsForSale ? 'Показать мои корабли' : 'Показать корабли для продажи'}>
+                            <span className="ship-buy-label">{showShipsForSale ? 'МОИ КОРАБЛИ' : 'КУПИТЬ КОРАБЛЬ'}</span>
+                            <span className="ship-buy-hint">{showShipsForSale ? 'АНГАР ПИЛОТА' : 'КАТАЛОГ ФЛОТА'}</span>
                         </button>
                     </div>
                 </section>
             </div>
 
-            {logoutDialogOpen && (
+            {confirm && (
+                <div className="slot-modal" role="presentation"
+                     onMouseDown={(event) => {
+                         if (event.target === event.currentTarget) setConfirm(null);
+                     }}>
+                    <section className="slot-dialog" role="dialog" aria-modal="true"
+                             aria-label="Подтверждение продажи">
+                        <div className="slot-dialog-head">
+                            <div>
+                                <span className="eyebrow">ПРОДАЖА</span>
+                                <h3>{confirm.kind === 'ship'
+                                    ? `«${ship?.name}» — вместе с содержимым`
+                                    : confirmInstance ? `«${confirmInstance.name}» — вместе с грузом` : ''}</h3>
+                            </div>
+                            <button className="slot-close" type="button" aria-label="Закрыть"
+                                    onClick={() => setConfirm(null)}>×</button>
+                        </div>
+                        <div className="dialog-body">
+                            {confirm.kind === 'ship' ? (
+                                <>
+                                    <p className="dialog-text">Корабль продаётся вместе с оборудованием и грузом.</p>
+                                    <div className="dialog-lines">
+                                        <div className="dialog-line cost"><span>Корабль</span>
+                                            <b>{formatNumber(shipSalePrice)} ¤</b></div>
+                                        <div className="dialog-line cost">
+                                            <span>Оборудование · {instances.length} шт.</span>
+                                            <b>{formatNumber(equipmentSalePrice)} ¤</b></div>
+                                        <div className="dialog-line cost">
+                                            <span>Груз · {formatNumber(cargoKg)} кг</span>
+                                            <b>{formatNumber(cargoSalePrice)} ¤</b></div>
+                                        <div className="dialog-line total"><span>Итого</span>
+                                            <b>{formatNumber(shipSalePrice + equipmentSalePrice + cargoSalePrice)} ¤</b></div>
+                                    </div>
+                                    <TradeErrorLine text={message}/>
+                                    <div className="dialog-actions">
+                                        <button className="trade-button sell" type="button" disabled={isTradeProcessing}
+                                                onClick={() => ship && void runTrade('sell_ship', {userShipId: ship.id})}>
+                                            Продать корабль
+                                        </button>
+                                        <button className="trade-button ghost" type="button"
+                                                onClick={() => setConfirm(null)}>Отмена</button>
+                                    </div>
+                                </>
+                            ) : confirmInstance ? (
+                                <>
+                                    <p className="dialog-text">Контейнер продаётся только вместе с грузом. Внутри:</p>
+                                    <div className="dialog-lines">
+                                        {confirmInstance.cargo.map((line) => (
+                                            <div className="dialog-line" key={line.resource_id}>
+                                                <span>{line.name}</span>
+                                                <b>{formatNumber(line.amount_kg)} кг</b>
+                                                <small>{formatNumber(line.amount_kg * line.price_sale)} ¤</small>
+                                            </div>
+                                        ))}
+                                        <div className="dialog-line total">
+                                            <span>Итого</span>
+                                            <b>{formatNumber(
+                                                priceOf(catalog.equipments.find((m) => m.id === confirmInstance.model_id), 'price_sale')
+                                                + confirmInstance.cargo.reduce((sum, line) => sum + line.amount_kg * line.price_sale, 0),
+                                            )} ¤</b>
+                                        </div>
+                                    </div>
+                                    <TradeErrorLine text={message}/>
+                                    <div className="dialog-actions">
+                                        <button className="trade-button sell" type="button" disabled={isTradeProcessing}
+                                                onClick={() => void runTrade('sell_equipment', {
+                                                    userShipId: ship?.id,
+                                                    equipmentInstanceId: confirmInstance.id,
+                                                    withCargo: true,
+                                                })}>
+                                            Продать вместе с грузом
+                                        </button>
+                                        <button className="trade-button ghost" type="button"
+                                                onClick={() => setConfirm(null)}>Отмена</button>
+                                    </div>
+                                </>
+                            ) : null}
+                        </div>
+                    </section>
+                </div>
+            )}
+
+            {accountOpen && (
                 <div className="hangar-account-backdrop"
                      onMouseDown={(event) => {
-                         if (!deletingAccount && event.target === event.currentTarget) setLogoutDialogOpen(false);
+                         if (!deletingAccount && event.target === event.currentTarget) setAccountOpen(false);
                      }}>
                     <section className="hangar-account-dialog" role="dialog" aria-modal="true"
                              aria-labelledby="hangar-account-title">
@@ -1239,7 +1358,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                         <p>Вы вернётесь на экран входа.</p>
                         <div className="hangar-account-actions">
                             <button className="trade-button ghost" type="button" disabled={deletingAccount}
-                                    onClick={() => setLogoutDialogOpen(false)}>Остаться</button>
+                                    onClick={() => setAccountOpen(false)}>Остаться</button>
                             <button className="trade-button buy" type="button" disabled={deletingAccount}
                                     onClick={onLogout}>Выйти</button>
                         </div>
@@ -1254,6 +1373,419 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                     </section>
                 </div>
             )}
+            {tip && createPortal(
+                <div className="hangar-slot-tooltip" role="tooltip" ref={tipRef}
+                     style={{left: 0, top: 0, visibility: tipPlaced ? 'visible' : 'hidden'}}>
+                    <h4>{tip.content.title}</h4>
+                    {tip.content.rows.length > 0 && (
+                        <div className="tip-list">
+                            {tip.content.rows.map((row, rowIndex) => (
+                                <div className="tip-item" key={rowIndex}>
+                                    <span className="tip-icon"><HangarIcon name={row.icon} size={16}/></span>
+                                    <span className="tip-copy">
+                                        <strong>{row.name}</strong>
+                                        {row.lines.map((line, lineIndex) => <small key={lineIndex}>{line}</small>)}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {tip.content.note && <small>{tip.content.note}</small>}
+                </div>,
+                document.body,
+            )}
         </main>
+    );
+}
+
+/* ---------- Блоки ---------- */
+
+function TradeErrorLine({text}: {text: string}) {
+    if (!text) return null;
+    return <p className="trade-error" role="alert">{text}</p>;
+}
+
+// Ресурс по имени: в prop2 контейнера хранятся названия материалов, а не ID.
+function resourceByName(name: string) {
+    const key = name.trim().toLowerCase();
+    return catalog.resources.find((resource) => resource.name.trim().toLowerCase() === key) ?? null;
+}
+
+// «Можно положить»: каждая строка с иконкой ресурса, как в референсе ангара.
+function AllowedList({names}: {names: string[]}) {
+    if (names.length === 0) return null;
+    return (
+        <div className="trade-cargo-list shop-cargo-list">
+            {names.map((name) => {
+                const resource = resourceByName(name);
+                return (
+                    <div className="trade-cargo-row" key={name}>
+                        <span className="trade-cargo-icon">
+                            <HangarIcon name={resource?.icon || 'crate'} size={13}/>
+                        </span>
+                        <span className="trade-cargo-name">{resource?.name || name}</span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+// Трюм: занятость по массе, плитки оборудования и груз контейнеров.
+function HoldBlock({hold, selectedInstanceId, selectedCargo, onInstanceClick, onContainerClick, onCargoClick, onShowTip, onHideTip}: {
+    hold: HangarHold;
+    selectedInstanceId: number | null;
+    selectedCargo: OwnedCargoSelection | null;
+    onInstanceClick: (instance: HangarEquipmentInstance) => void;
+    onContainerClick: (instance: HangarEquipmentInstance) => void;
+    onCargoClick: (instance: HangarEquipmentInstance, line: HangarCargoLine) => void;
+    onShowTip: (target: HTMLElement, content: TipContent) => void;
+    onHideTip: () => void;
+}) {
+    const capacity = Number(hold.capacity_mass);
+    const used = Number(hold.used_mass);
+    const percent = capacity > 0 ? Math.min(Math.round(used / capacity * 100), 100) : 0;
+
+    return (
+        <div className="hold-row">
+            <div className="hold-head">
+                <strong>Трюм {hold.hold_index + 1}</strong>
+                <span>{formatNumber(used)} / {formatNumber(capacity)} кг</span>
+            </div>
+            <i className="hold-bar"><em style={{width: `${percent}%`}}/></i>
+            {hold.equipment.length > 0 ? (
+                <div className="slot-grid hold-grid">
+                    {hold.equipment.map((instance) => (
+                        <button key={instance.id} type="button"
+                                className={`slot-tile hold-tile${selectedInstanceId === instance.id ? ' selected' : ''}`}
+                                aria-label={`${instance.name}, ${formatNumber(instance.mass)} кг`}
+                                onMouseEnter={(event) => onShowTip(event.currentTarget, holdTipContent(hold, instance))}
+                                onMouseLeave={onHideTip}
+                                onFocus={(event) => onShowTip(event.currentTarget, holdTipContent(hold, instance))}
+                                onBlur={onHideTip}
+                                onClick={() => instance.is_container
+                                    ? onContainerClick(instance)
+                                    : onInstanceClick(instance)}>
+                            <HangarIcon name={instance.icon} size={22}/>
+                            {instance.cargo.length > 0 && (
+                                <span className="slot-cargo-chips">
+                                    {instance.cargo.slice(0, 3).map((line) => (
+                                        <span key={line.resource_id}
+                                              className={`slot-cargo-chip${selectedCargo
+                                                  && selectedCargo.containerId === instance.id
+                                                  && selectedCargo.resourceId === line.resource_id ? ' selected' : ''}`}
+                                              role="button"
+                                              tabIndex={0}
+                                              aria-label={`${line.name}, ${formatNumber(line.amount_kg)} кг`}
+                                              onMouseEnter={(event) => onShowTip(event.currentTarget, cargoTipContent(instance, line))}
+                                              onMouseLeave={(event) => {
+                                                  const tile = event.currentTarget.closest('.slot-tile');
+                                                  if (tile) onShowTip(tile as HTMLElement, holdTipContent(hold, instance));
+                                                  else onHideTip();
+                                              }}
+                                              onFocus={(event) => onShowTip(event.currentTarget, cargoTipContent(instance, line))}
+                                              onBlur={onHideTip}
+                                              onClick={(event) => {
+                                                  event.stopPropagation();
+                                                  onCargoClick(instance, line);
+                                              }}
+                                              onKeyDown={(event) => {
+                                                  if (event.key !== 'Enter' && event.key !== ' ') return;
+                                                  event.preventDefault();
+                                                  event.stopPropagation();
+                                                  onCargoClick(instance, line);
+                                              }}>
+                                            <HangarIcon name={line.icon} size={11}/>
+                                        </span>
+                                    ))}
+                                </span>
+                            )}
+                            {instance.mass > 0 && <span className="slot-qty">{formatNumber(instance.mass)} кг</span>}
+                        </button>
+                    ))}
+                </div>
+            ) : (
+                <span className="hold-empty">Пусто</span>
+            )}
+        </div>
+    );
+}
+
+// Колонка содержимого: те же категории каталога, что и в списке товаров.
+type ContentRow = {
+    key: string;
+    kind: 'equipment' | 'cargo';
+    instance: HangarEquipmentInstance;
+    line?: HangarCargoLine;
+    model: CatalogItem | null;
+};
+
+function ContentsList({ship, activeTab, selectedInstanceId, selectedCargo, onInstanceClick, onContainerClick, onCargoClick}: {
+    ship: HangarShip | null;
+    activeTab: CatalogTab;
+    selectedInstanceId: number | null;
+    selectedCargo: OwnedCargoSelection | null;
+    onInstanceClick: (instance: HangarEquipmentInstance) => void;
+    onContainerClick: (instance: HangarEquipmentInstance) => void;
+    onCargoClick: (instance: HangarEquipmentInstance, line: HangarCargoLine) => void;
+}) {
+    if (!ship) return <div className="list-empty">Корабль не выбран</div>;
+
+    const instances = shipInstances(ship);
+    const rows: ContentRow[] = [];
+    for (const instance of instances) {
+        if (activeTab !== 'resources') {
+            rows.push({
+                key: `e-${instance.id}`,
+                kind: 'equipment',
+                instance,
+                model: catalog.equipments.find((entry) => entry.id === instance.model_id) ?? null,
+            });
+        }
+        if (activeTab !== 'equipment') {
+            for (const line of instance.cargo) {
+                rows.push({
+                    key: `c-${instance.id}-${line.resource_id}`,
+                    kind: 'cargo',
+                    instance,
+                    line,
+                    model: catalog.resources.find((entry) => entry.id === line.resource_id) ?? null,
+                });
+            }
+        }
+    }
+
+    if (rows.length === 0) {
+        const emptyText = instances.length === 0
+            ? 'На корабле пока ничего нет'
+            : activeTab === 'resources' ? 'Ресурсов на корабле нет' : 'Оборудования на корабле нет';
+        return <div className="list-empty">{emptyText}</div>;
+    }
+
+    // Порядок групп — как у категорий каталога: сначала оборудование, затем ресурсы.
+    const order = new Map<number, number>();
+    catalog.categoriesEquipment.forEach((category, index) => order.set(category.id, index));
+    catalog.categoriesResource.forEach((category, index) => order.set(category.id, 100 + index));
+
+    const groups = new Map<number, {id: number; name: string; icon: string; rows: ContentRow[]}>();
+    for (const row of rows) {
+        const categories = row.kind === 'equipment' ? catalog.categoriesEquipment : catalog.categoriesResource;
+        const category = categories.find((entry) => entry.id === Number(row.model?.categoryId ?? 0));
+        const id = category?.id ?? 0;
+        if (!groups.has(id)) {
+            groups.set(id, {id, name: category?.name ?? 'Прочее', icon: category?.icon ?? 'grid', rows: []});
+        }
+        groups.get(id)!.rows.push(row);
+    }
+
+    const sorted = [...groups.values()].sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999));
+
+    return (
+        <>
+            {sorted.map((group) => (
+                <div className="list-group" key={group.id}>
+                    <div className="list-group-head">
+                        <span className="list-group-icon"><HangarIcon name={group.icon} size={13}/></span>
+                        <strong>{group.name}</strong><small>{group.rows.length}</small>
+                    </div>
+                    {group.rows.map((row) => {
+                        if (row.kind === 'cargo' && row.line) {
+                            const line = row.line;
+                            return (
+                                <button key={row.key} type="button"
+                                        className={`item-row${selectedCargo
+                                            && selectedCargo.containerId === row.instance.id
+                                            && selectedCargo.resourceId === line.resource_id ? ' selected' : ''}`}
+                                        onClick={() => onCargoClick(row.instance, line)}>
+                                    <span className="item-icon"><HangarIcon name={line.icon} size={22}/></span>
+                                    <span className="item-copy">
+                                        <strong>{line.name}</strong>
+                                        <span>{row.instance.name} · {locationLabel(row.instance)}</span>
+                                    </span>
+                                    <span className="item-meta">
+                                        <small>{formatNumber(line.amount_kg)} кг</small>
+                                        <b>{formatNumber(line.price_sale)} ¤/кг</b>
+                                    </span>
+                                </button>
+                            );
+                        }
+                        const instance = row.instance;
+                        return (
+                            <button key={row.key} type="button"
+                                    className={`item-row${selectedInstanceId === instance.id ? ' selected' : ''}`}
+                                    onClick={() => instance.is_container
+                                        ? onContainerClick(instance)
+                                        : onInstanceClick(instance)}>
+                                <span className="item-icon"><HangarIcon name={instance.icon} size={22}/></span>
+                                <span className="item-copy">
+                                    <strong>{instance.name}</strong>
+                                    <span>{locationLabel(instance)}</span>
+                                </span>
+                                <span className="item-meta">
+                                    <small>{formatNumber(instance.mass)} кг</small>
+                                    {instance.is_container
+                                        && <b>{formatNumber(instance.used_kg)} / {formatNumber(instance.capacity_kg)} кг</b>}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            ))}
+        </>
+    );
+}
+
+// Карточка продажи своего корабля: разбивка цены и единственная кнопка продажи.
+function ShipSaleCard({ship, equipmentCount, shipPrice, equipmentPrice, cargoKg, cargoPrice, canSell, message, busy, onSell}: {
+    ship: HangarShip;
+    equipmentCount: number;
+    shipPrice: number;
+    equipmentPrice: number;
+    cargoKg: number;
+    cargoPrice: number;
+    canSell: boolean;
+    message: string;
+    busy: boolean;
+    onSell: () => void;
+}) {
+    return (
+        <>
+            <span className="ship-sub">Мой корабль · продажа</span>
+            <strong className="ship-title">{ship.name}</strong>
+            <div className="ship-rows shop-price-rows">
+                <div className="ship-row"><span>Корабль</span><b>{formatNumber(shipPrice)} ¤</b></div>
+                <div className="ship-row"><span>Оборудование · {equipmentCount} шт.</span>
+                    <b>{formatNumber(equipmentPrice)} ¤</b></div>
+                <div className="ship-row"><span>Груз · {formatNumber(cargoKg)} кг</span>
+                    <b>{formatNumber(cargoPrice)} ¤</b></div>
+            </div>
+            <div className="trade-sale-total">
+                <span>Итого</span>
+                <b>{formatNumber(shipPrice + equipmentPrice + cargoPrice)} ¤</b>
+            </div>
+            {!canSell && <p className="trade-error">Нельзя продать единственный корабль.</p>}
+            <TradeErrorLine text={message}/>
+            <div className="shop-actions">
+                <SellButton type="button" label="Продать корабль" disabled={!canSell || busy} onClick={onSell}/>
+            </div>
+        </>
+    );
+}
+
+function InstanceCard({instance, message, busy, onSell}: {
+    instance: HangarEquipmentInstance;
+    message: string;
+    busy: boolean;
+    onSell: () => void;
+}) {
+    const model = catalog.equipments.find((entry) => entry.id === instance.model_id) ?? null;
+    return (
+        <>
+            <span className="ship-sub">{categoryOf(model, 'equipment')?.name || 'Оборудование'}</span>
+            <strong className="ship-title">{instance.name}</strong>
+            <div className="ship-rows">
+                <div className="ship-row"><span>Место</span><b>{locationLabel(instance)}</b></div>
+                <div className="ship-row"><span>Масса</span><b>{formatNumber(instance.mass)} кг</b></div>
+                {instance.is_container && (
+                    <div className="ship-row"><span>Заполнено</span>
+                        <b>{formatNumber(instance.used_kg)} / {formatNumber(instance.capacity_kg)} кг</b></div>
+                )}
+            </div>
+            {instance.cargo.length > 0 && (
+                <>
+                    <span className="ship-sub">Груз в контейнере</span>
+                    <div className="trade-cargo-list shop-cargo-list">
+                        {instance.cargo.map((line) => (
+                            <div className="trade-cargo-row" key={line.resource_id}>
+                                <span className="trade-cargo-name">{line.name}</span>
+                                <span className="trade-cargo-kg">{formatNumber(line.amount_kg)} кг</span>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
+            <div className="ship-rows shop-price-rows">
+                <div className="ship-row"><span>Цена продажи</span>
+                    <b>{formatNumber(priceOf(model, 'price_sale')
+                        + instance.cargo.reduce((sum, line) => sum + line.amount_kg * line.price_sale, 0))} ¤</b></div>
+            </div>
+            <TradeErrorLine text={message}/>
+            <div className="shop-actions">
+                <SellButton type="button"
+                            label={instance.cargo.length > 0 ? 'Продать вместе с грузом' : actionLabels.sell_equipment}
+                            disabled={busy} onClick={onSell}/>
+            </div>
+        </>
+    );
+}
+
+function CargoCard({line, container, message, busy, onSell}: {
+    line: HangarCargoLine;
+    container: HangarEquipmentInstance;
+    message: string;
+    busy: boolean;
+    onSell: () => void;
+}) {
+    return (
+        <>
+            <span className="ship-sub">Груз · {container.name}</span>
+            <strong className="ship-title">{line.name}</strong>
+            <div className="ship-rows">
+                <div className="ship-row"><span>В контейнере</span><b>{formatNumber(line.amount_kg)} кг</b></div>
+                <div className="ship-row"><span>Свободно</span><b>{formatNumber(container.free_kg)} кг</b></div>
+            </div>
+            <div className="ship-rows shop-price-rows">
+                <div className="ship-row"><span>Цена продажи</span><b>{formatNumber(line.price_sale)} ¤ / кг</b></div>
+                <div className="ship-row"><span>За 1 кг</span><b>{formatNumber(line.price_sale)} ¤</b></div>
+            </div>
+            <TradeErrorLine text={message}/>
+            <div className="shop-actions">
+                <SellButton type="button" label="Продать 1 кг" disabled={busy} onClick={onSell}/>
+            </div>
+        </>
+    );
+}
+
+function ContainerCard({container, message, busy, onCargoClick, onSell}: {
+    container: HangarEquipmentInstance;
+    message: string;
+    busy: boolean;
+    onCargoClick: (line: HangarCargoLine) => void;
+    onSell: () => void;
+}) {
+    const model = catalog.equipments.find((entry) => entry.id === container.model_id) ?? null;
+    return (
+        <>
+            <span className="ship-sub">{categoryOf(model, 'equipment')?.name || 'Контейнер'} · {locationLabel(container)}</span>
+            <strong className="ship-title">{container.name}</strong>
+            <div className="ship-rows">
+                <div className="ship-row"><span>Заполнено</span>
+                    <b>{formatNumber(container.used_kg)} / {formatNumber(container.capacity_kg)} кг</b></div>
+                <div className="ship-row"><span>Свободно</span><b>{formatNumber(container.free_kg)} кг</b></div>
+                <div className="ship-row"><span>Принимает</span><b>{container.allowed.length} вид(ов)</b></div>
+            </div>
+            <span className="ship-sub">Груз в контейнере</span>
+            {container.cargo.length > 0 ? (
+                <div className="trade-cargo-list shop-cargo-list">
+                    {container.cargo.map((line) => (
+                        <button className="trade-cargo-row" type="button" key={line.resource_id}
+                                onClick={() => onCargoClick(line)}>
+                            <span className="trade-cargo-name">{line.name}</span>
+                            <span className="trade-cargo-kg">{formatNumber(line.amount_kg)} кг</span>
+                        </button>
+                    ))}
+                </div>
+            ) : (
+                <span className="hold-empty">Пусто</span>
+            )}
+            <span className="ship-sub">Можно положить</span>
+            <AllowedList names={container.allowed}/>
+            <TradeErrorLine text={message}/>
+            <div className="shop-actions">
+                <SellButton type="button"
+                            label={container.cargo.length > 0 ? 'Продать вместе с грузом' : actionLabels.sell_equipment}
+                            disabled={busy} onClick={onSell}/>
+            </div>
+        </>
     );
 }

@@ -1,9 +1,20 @@
-﻿// Небольшой типизированный клиент REST API с единообразной обработкой ошибок.
-import type {AuthResponse, HangarShip, HangarStatus, TradeActionType} from './types';
+// Небольшой типизированный клиент REST API с единообразной обработкой ошибок.
+import type {AuthResponse, HangarStatus, TradeActionType} from './types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005';
 
-// Выполняет HTTP-запрос, добавляет токен авторизации и переводит ошибки API в текст.
+// Ошибка API: сервер присылает текст и код, чтобы интерфейс показал причину над кнопкой.
+export class ApiError extends Error {
+    readonly code: string;
+
+    constructor(message: string, code = '') {
+        super(message);
+        this.name = 'ApiError';
+        this.code = code;
+    }
+}
+
+// Выполняет HTTP-запрос, добавляет токен авторизации и переводит ошибки API в ApiError.
 async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
     const response = await fetch(`${API_URL}${path}`, {
         ...options,
@@ -15,7 +26,10 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-        throw new Error(typeof payload.error === 'string' ? payload.error : 'Не удалось выполнить запрос.');
+        throw new ApiError(
+            typeof payload.error === 'string' ? payload.error : 'Не удалось выполнить запрос.',
+            typeof payload.code === 'string' ? payload.code : '',
+        );
     }
     return payload as T;
 }
@@ -33,17 +47,13 @@ export function fetchHangar(token: string) {
 
 export interface TradeResponse {
     success: boolean;
-    email: string;
     action: TradeActionType;
-    shipModelId?: number;
-    price_buy?: number;
-    price_sale?: number;
-    credits?: number;
-    boughtShip?: HangarShip;
+    credits: number;
+    receipt?: Record<string, unknown>;
     hangar?: HangarStatus;
 }
 
-// Отправляет торговое действие на сервер.
+// Отправляет торговое действие на сервер: цены и доступность проверяет только он.
 export function executeTrade(token: string, action: TradeActionType, payload: Record<string, unknown> = {}) {
     return request<TradeResponse>('/api/hangar/trade', {
         method: 'POST',
@@ -53,7 +63,7 @@ export function executeTrade(token: string, action: TradeActionType, payload: Re
 
 // Удаляет авторизованный аккаунт и его данные на сервере.
 export function deleteAccount(token: string) {
-    return request<{success: true}>('/api/auth/account', {method: 'DELETE'}, token);
+    return request<{ success: true }>('/api/auth/account', {method: 'DELETE'}, token);
 }
 
 // Возвращает базовый адрес API для построения адреса WebSocket-соединения.

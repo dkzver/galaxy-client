@@ -365,7 +365,7 @@
     flex: 1;
     min-width: 0;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
 }
 
 .portal-input-wrap label {

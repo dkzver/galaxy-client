@@ -68,7 +68,6 @@ export default function AuthScreen({onAuthenticated, initialError}: Props) {
             </div>
             <div className="portal-wrap">
                 <AuthPanel header={<Header label="ЦЕНТР УПРАВЛЕНИЯ" header="GALAXY" project="КОСМИЧЕСКАЯ СЕТЬ"/>}>
-                    <p className="portal-eyebrow">Центр управления</p>
                     <h1 className="portal-title">GALAXY</h1>
                     <p className="portal-sub">
                         Введите email и пароль для входа на карту космоса или создайте аккаунт нового пилота со
@@ -114,9 +113,11 @@ export default function AuthScreen({onAuthenticated, initialError}: Props) {
                             )}
                         </div>
 
-                        <p className="portal-auth-message" role="status" aria-live="polite">
-                            {error && <span>{error}</span>}
-                        </p>
+                        {error && (
+                            <p className="portal-auth-message" role="status" aria-live="polite">
+                                <span>{error}</span>
+                            </p>
+                        )}
 
                         <nav className="portal-menu" aria-label="Действие с аккаунтом">
                             <button

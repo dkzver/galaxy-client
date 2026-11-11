@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "sync:catalog": "node scripts/sync-catalog.mjs",
+    "predev": "npm run sync:catalog",
     "dev": "vite",
+    "prebuild": "npm run sync:catalog",
     "build": "tsc -b && vite build",
     "preview": "vite preview"
   },

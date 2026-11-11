@@ -1,0 +1,2376 @@
+{
+  "format": "galaxy-admin-data",
+  "version": 2,
+  "settings": {
+    "initialBaseId": 1,
+    "initialShipId": 1,
+    "startingCredits": "3500000",
+    "id_category_hold": 15,
+    "id_category_fuel": 16,
+    "id_slot_hold": 9,
+    "id_slot_fuel": 10,
+    "id_propert_mass_value": 3
+  },
+  "properties": [
+    {
+      "id": 1,
+      "name": "Прочность",
+      "unit": "ед."
+    },
+    {
+      "id": 2,
+      "name": "Скорость",
+      "unit": "км/с"
+    },
+    {
+      "id": 3,
+      "name": "Масса",
+      "unit": "кг"
+    },
+    {
+      "id": 4,
+      "name": "Урон",
+      "unit": "ед."
+    },
+    {
+      "id": 5,
+      "name": "Мощность",
+      "unit": "МВт"
+    },
+    {
+      "id": 6,
+      "name": "Скорострельность",
+      "unit": "выстр./мин"
+    },
+    {
+      "id": 7,
+      "name": "Защита",
+      "unit": "ед."
+    },
+    {
+      "id": 8,
+      "name": "Регенерация",
+      "unit": "ед./с"
+    },
+    {
+      "id": 9,
+      "name": "Скорость добычи",
+      "unit": "кг/мин"
+    },
+    {
+      "id": 10,
+      "name": "Скорость переработки",
+      "unit": "кг/мин"
+    },
+    {
+      "id": 11,
+      "name": "Дальность",
+      "unit": "км"
+    },
+    {
+      "id": 12,
+      "name": "Вместимость",
+      "unit": "кг"
+    },
+    {
+      "id": 13,
+      "name": "Тяга",
+      "unit": "кН"
+    },
+    {
+      "id": 14,
+      "name": "Расход топлива",
+      "unit": "кг/мин"
+    },
+    {
+      "id": 15,
+      "name": "Скорость ремонта",
+      "unit": "ед./мин"
+    }
+  ],
+  "slots": [
+    {
+      "id": 1,
+      "name": "Лазерная точка"
+    },
+    {
+      "id": 2,
+      "name": "Пулемётная точка"
+    },
+    {
+      "id": 3,
+      "name": "Щитовой генератор"
+    },
+    {
+      "id": 4,
+      "name": "Двигатель"
+    },
+    {
+      "id": 5,
+      "name": "Радар"
+    },
+    {
+      "id": 6,
+      "name": "Добывающий модуль"
+    },
+    {
+      "id": 7,
+      "name": "Перерабатывающий модуль"
+    },
+    {
+      "id": 8,
+      "name": "Ремонтный модуль"
+    },
+    {
+      "id": 9,
+      "name": "Грузовой отсек"
+    },
+    {
+      "id": 10,
+      "name": "Топливный бак"
+    }
+  ],
+  "ships": [
+    {
+      "id": 1,
+      "name": "Гром",
+      "description": "Тяжёлый штурмовик. Высокая прочность и огневая мощь.",
+      "values": {
+        "1": "3500",
+        "2": "8",
+        "3": "15000"
+      },
+      "price_buy": "12000",
+      "price_sale": "6000",
+      "icon": "ship_heavy",
+      "slots": [
+        {
+          "slotId": 2,
+          "itemId": 23
+        },
+        {
+          "slotId": 1,
+          "itemId": 17
+        },
+        {
+          "slotId": 2,
+          "itemId": 0
+        },
+        {
+          "slotId": 2,
+          "itemId": 0
+        },
+        {
+          "slotId": 3,
+          "itemId": 0
+        },
+        {
+          "slotId": 3,
+          "itemId": 0
+        },
+        {
+          "slotId": 4,
+          "itemId": 0
+        },
+        {
+          "slotId": 4,
+          "itemId": 0
+        },
+        {
+          "slotId": 5,
+          "itemId": 0
+        },
+        {
+          "slotId": 9,
+          "itemId": 68
+        },
+        {
+          "slotId": 10,
+          "itemId": 0
+        }
+      ],
+      "holds": [
+        {
+          "capacity": "8000",
+          "itemId": 47
+        },
+        {
+          "capacity": "1500",
+          "itemId": 0
+        },
+        {
+          "capacity": "1500",
+          "itemId": 51
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Сокол",
+      "description": "Многоцелевой фрегат. Баланс между скоростью, защитой и вооружением.",
+      "values": {
+        "1": "1800",
+        "2": "15",
+        "3": "6000"
+      },
+      "price_buy": "5000",
+      "price_sale": "2500",
+      "icon": "ship_medium",
+      "slots": [
+        {
+          "slotId": 1,
+          "itemId": 0
+        },
+        {
+          "slotId": 2,
+          "itemId": 0
+        },
+        {
+          "slotId": 3,
+          "itemId": 0
+        },
+        {
+          "slotId": 4,
+          "itemId": 0
+        },
+        {
+          "slotId": 5,
+          "itemId": 0
+        },
+        {
+          "slotId": 8,
+          "itemId": 0
+        },
+        {
+          "slotId": 9,
+          "itemId": 0
+        },
+        {
+          "slotId": 10,
+          "itemId": 0
+        }
+      ],
+      "holds": [
+        {
+          "capacity": "3000",
+          "itemId": 0
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Челнок",
+      "description": "Лёгкий разведывательно-транспортный катер. Быстрый, но хрупкий.",
+      "values": {
+        "1": "800",
+        "2": "25",
+        "3": "1500"
+      },
+      "price_buy": "1500",
+      "price_sale": "750",
+      "icon": "ship_light",
+      "slots": [
+        {
+          "slotId": 2,
+          "itemId": 0
+        },
+        {
+          "slotId": 4,
+          "itemId": 0
+        },
+        {
+          "slotId": 5,
+          "itemId": 0
+        },
+        {
+          "slotId": 6,
+          "itemId": 0
+        },
+        {
+          "slotId": 7,
+          "itemId": 0
+        },
+        {
+          "slotId": 10,
+          "itemId": 0
+        }
+      ],
+      "holds": [
+        {
+          "capacity": "1500",
+          "itemId": 0
+        },
+        {
+          "capacity": "1500",
+          "itemId": 51
+        }
+      ]
+    }
+  ],
+  "equipments": [
+    {
+      "id": 10,
+      "name": "Топливный бак, 1 т",
+      "categoryId": 16,
+      "values": {
+        "3": "120",
+        "12": "1000"
+      },
+      "price_buy": "400",
+      "price_sale": "250",
+      "icon": "fuel",
+      "slotId": 10,
+      "prop2": [
+        "Тритиевое топливо"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Топливный бак, 5 т",
+      "categoryId": 16,
+      "values": {
+        "3": "350",
+        "12": "5000"
+      },
+      "price_buy": "800",
+      "price_sale": "550",
+      "icon": "fuel",
+      "slotId": 10,
+      "prop2": [
+        "Тритиевое топливо"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Топливный бак, 10 т",
+      "categoryId": 16,
+      "values": {
+        "3": "600",
+        "12": "10000"
+      },
+      "price_buy": "1000",
+      "price_sale": "650",
+      "icon": "fuel",
+      "slotId": 10,
+      "prop2": [
+        "Тритиевое топливо"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Лазер M-1",
+      "categoryId": 7,
+      "values": {
+        "3": "5",
+        "4": "35",
+        "5": "122"
+      },
+      "price_buy": "370",
+      "price_sale": "220",
+      "icon": "bolt",
+      "slotId": 1
+    },
+    {
+      "id": 14,
+      "name": "Лазер M-2",
+      "categoryId": 7,
+      "values": {
+        "3": "6",
+        "4": "50",
+        "5": "164"
+      },
+      "price_buy": "440",
+      "price_sale": "190",
+      "icon": "bolt",
+      "slotId": 1
+    },
+    {
+      "id": 15,
+      "name": "Лазер M-3",
+      "categoryId": 7,
+      "values": {
+        "3": "7",
+        "4": "65",
+        "5": "206"
+      },
+      "price_buy": "510",
+      "price_sale": "160",
+      "icon": "bolt",
+      "slotId": 1
+    },
+    {
+      "id": 16,
+      "name": "Лазер M-4",
+      "categoryId": 7,
+      "values": {
+        "3": "8",
+        "4": "80",
+        "5": "248"
+      },
+      "price_buy": "580",
+      "price_sale": "430",
+      "icon": "bolt",
+      "slotId": 1
+    },
+    {
+      "id": 17,
+      "name": "Лазер M-5",
+      "categoryId": 7,
+      "values": {
+        "3": "9",
+        "4": "95",
+        "5": "290"
+      },
+      "price_buy": "650",
+      "price_sale": "400",
+      "icon": "bolt",
+      "slotId": 1
+    },
+    {
+      "id": 18,
+      "name": "Лазер M-6",
+      "categoryId": 7,
+      "values": {
+        "3": "10",
+        "4": "110",
+        "5": "332"
+      },
+      "price_buy": "720",
+      "price_sale": "370",
+      "icon": "bolt",
+      "slotId": 1
+    },
+    {
+      "id": 19,
+      "name": "Лазер M-7",
+      "categoryId": 7,
+      "values": {
+        "3": "11",
+        "4": "125",
+        "5": "374"
+      },
+      "price_buy": "790",
+      "price_sale": "640",
+      "icon": "bolt",
+      "slotId": 1
+    },
+    {
+      "id": 20,
+      "name": "Лазер M-8",
+      "categoryId": 7,
+      "values": {
+        "3": "12",
+        "4": "140",
+        "5": "416"
+      },
+      "price_buy": "860",
+      "price_sale": "610",
+      "icon": "bolt",
+      "slotId": 1
+    },
+    {
+      "id": 21,
+      "name": "Лазер M-9",
+      "categoryId": 7,
+      "values": {
+        "3": "13",
+        "4": "155",
+        "5": "458"
+      },
+      "price_buy": "930",
+      "price_sale": "580",
+      "icon": "bolt",
+      "slotId": 1
+    },
+    {
+      "id": 22,
+      "name": "Лазер M-10",
+      "categoryId": 7,
+      "values": {
+        "3": "14",
+        "4": "170",
+        "5": "500"
+      },
+      "price_buy": "1000",
+      "price_sale": "850",
+      "icon": "bolt",
+      "slotId": 1
+    },
+    {
+      "id": 23,
+      "name": "Пулемёт P-1",
+      "categoryId": 8,
+      "values": {
+        "3": "8",
+        "4": "10",
+        "6": "4"
+      },
+      "price_buy": "355",
+      "price_sale": "105",
+      "icon": "weapon",
+      "slotId": 2
+    },
+    {
+      "id": 24,
+      "name": "Пулемёт P-2",
+      "categoryId": 8,
+      "values": {
+        "3": "10",
+        "4": "14",
+        "6": "6"
+      },
+      "price_buy": "400",
+      "price_sale": "50",
+      "icon": "weapon",
+      "slotId": 2
+    },
+    {
+      "id": 25,
+      "name": "Пулемёт P-3",
+      "categoryId": 8,
+      "values": {
+        "3": "12",
+        "4": "18",
+        "6": "8"
+      },
+      "price_buy": "445",
+      "price_sale": "295",
+      "icon": "weapon",
+      "slotId": 2
+    },
+    {
+      "id": 26,
+      "name": "Пулемёт P-4",
+      "categoryId": 8,
+      "values": {
+        "3": "14",
+        "4": "22",
+        "6": "10"
+      },
+      "price_buy": "490",
+      "price_sale": "240",
+      "icon": "weapon",
+      "slotId": 2
+    },
+    {
+      "id": 27,
+      "name": "Пулемёт P-5",
+      "categoryId": 8,
+      "values": {
+        "3": "16",
+        "4": "26",
+        "6": "12"
+      },
+      "price_buy": "535",
+      "price_sale": "185",
+      "icon": "weapon",
+      "slotId": 2
+    },
+    {
+      "id": 28,
+      "name": "Пулемёт P-6",
+      "categoryId": 8,
+      "values": {
+        "3": "18",
+        "4": "30",
+        "6": "14"
+      },
+      "price_buy": "580",
+      "price_sale": "430",
+      "icon": "weapon",
+      "slotId": 2
+    },
+    {
+      "id": 29,
+      "name": "Пулемёт P-7",
+      "categoryId": 8,
+      "values": {
+        "3": "20",
+        "4": "34",
+        "6": "16"
+      },
+      "price_buy": "625",
+      "price_sale": "375",
+      "icon": "weapon",
+      "slotId": 2
+    },
+    {
+      "id": 30,
+      "name": "Пулемёт P-8",
+      "categoryId": 8,
+      "values": {
+        "3": "22",
+        "4": "38",
+        "6": "18"
+      },
+      "price_buy": "670",
+      "price_sale": "320",
+      "icon": "weapon",
+      "slotId": 2
+    },
+    {
+      "id": 31,
+      "name": "Пулемёт P-9",
+      "categoryId": 8,
+      "values": {
+        "3": "24",
+        "4": "42",
+        "6": "20"
+      },
+      "price_buy": "715",
+      "price_sale": "565",
+      "icon": "weapon",
+      "slotId": 2
+    },
+    {
+      "id": 32,
+      "name": "Пулемёт P-10",
+      "categoryId": 8,
+      "values": {
+        "3": "26",
+        "4": "46",
+        "6": "22"
+      },
+      "price_buy": "760",
+      "price_sale": "510",
+      "icon": "weapon",
+      "slotId": 2
+    },
+    {
+      "id": 33,
+      "name": "Щит S-1",
+      "categoryId": 9,
+      "values": {
+        "3": "33",
+        "7": "280",
+        "8": "7"
+      },
+      "price_buy": "365",
+      "price_sale": "15",
+      "icon": "shield",
+      "slotId": 3
+    },
+    {
+      "id": 34,
+      "name": "Щит S-2",
+      "categoryId": 9,
+      "values": {
+        "3": "41",
+        "7": "410",
+        "8": "10"
+      },
+      "price_buy": "430",
+      "price_sale": "280",
+      "icon": "shield",
+      "slotId": 3
+    },
+    {
+      "id": 35,
+      "name": "Щит S-3",
+      "categoryId": 9,
+      "values": {
+        "3": "49",
+        "7": "540",
+        "8": "13"
+      },
+      "price_buy": "495",
+      "price_sale": "245",
+      "icon": "shield",
+      "slotId": 3
+    },
+    {
+      "id": 36,
+      "name": "Щит S-4",
+      "categoryId": 9,
+      "values": {
+        "3": "57",
+        "7": "670",
+        "8": "16"
+      },
+      "price_buy": "560",
+      "price_sale": "210",
+      "icon": "shield",
+      "slotId": 3
+    },
+    {
+      "id": 37,
+      "name": "Щит S-5",
+      "categoryId": 9,
+      "values": {
+        "3": "65",
+        "7": "800",
+        "8": "19"
+      },
+      "price_buy": "625",
+      "price_sale": "475",
+      "icon": "shield",
+      "slotId": 3
+    },
+    {
+      "id": 38,
+      "name": "Щит S-6",
+      "categoryId": 9,
+      "values": {
+        "3": "73",
+        "7": "930",
+        "8": "22"
+      },
+      "price_buy": "690",
+      "price_sale": "440",
+      "icon": "shield",
+      "slotId": 3
+    },
+    {
+      "id": 39,
+      "name": "Щит S-7",
+      "categoryId": 9,
+      "values": {
+        "3": "81",
+        "7": "1060",
+        "8": "25"
+      },
+      "price_buy": "755",
+      "price_sale": "405",
+      "icon": "shield",
+      "slotId": 3
+    },
+    {
+      "id": 40,
+      "name": "Щит S-8",
+      "categoryId": 9,
+      "values": {
+        "3": "89",
+        "7": "1190",
+        "8": "28"
+      },
+      "price_buy": "820",
+      "price_sale": "670",
+      "icon": "shield",
+      "slotId": 3
+    },
+    {
+      "id": 41,
+      "name": "Щит S-9",
+      "categoryId": 9,
+      "values": {
+        "3": "97",
+        "7": "1320",
+        "8": "31"
+      },
+      "price_buy": "885",
+      "price_sale": "635",
+      "icon": "shield",
+      "slotId": 3
+    },
+    {
+      "id": 42,
+      "name": "Щит S-10",
+      "categoryId": 9,
+      "values": {
+        "3": "105",
+        "7": "1450",
+        "8": "34"
+      },
+      "price_buy": "950",
+      "price_sale": "600",
+      "icon": "shield",
+      "slotId": 3
+    },
+    {
+      "id": 43,
+      "name": "Двигатель E-1",
+      "categoryId": 10,
+      "values": {
+        "3": "80",
+        "13": "120",
+        "14": "2"
+      },
+      "price_buy": "550",
+      "price_sale": "400",
+      "icon": "engine",
+      "slotId": 4
+    },
+    {
+      "id": 44,
+      "name": "Двигатель E-2",
+      "categoryId": 10,
+      "values": {
+        "3": "120",
+        "13": "200",
+        "14": "3"
+      },
+      "price_buy": "700",
+      "price_sale": "450",
+      "icon": "engine",
+      "slotId": 4
+    },
+    {
+      "id": 45,
+      "name": "Двигатель E-3",
+      "categoryId": 10,
+      "values": {
+        "3": "190",
+        "13": "340",
+        "14": "5"
+      },
+      "price_buy": "850",
+      "price_sale": "500",
+      "icon": "engine",
+      "slotId": 4
+    },
+    {
+      "id": 46,
+      "name": "Двигатель E-4",
+      "categoryId": 10,
+      "values": {
+        "3": "280",
+        "13": "520",
+        "14": "8"
+      },
+      "price_buy": "1000",
+      "price_sale": "850",
+      "icon": "engine",
+      "slotId": 4
+    },
+    {
+      "id": 47,
+      "name": "Бур D-1",
+      "categoryId": 12,
+      "values": {
+        "3": "170",
+        "9": "8"
+      },
+      "price_buy": "500",
+      "price_sale": "250",
+      "icon": "tool",
+      "slotId": 6,
+      "prop2": [
+        "Железо",
+        "Медь",
+        "Золото",
+        "Камень"
+      ]
+    },
+    {
+      "id": 48,
+      "name": "Бур D-2",
+      "categoryId": 12,
+      "values": {
+        "3": "220",
+        "9": "12"
+      },
+      "price_buy": "600",
+      "price_sale": "250",
+      "icon": "tool",
+      "slotId": 6,
+      "prop2": [
+        "Железо",
+        "Медь",
+        "Золото",
+        "Камень"
+      ]
+    },
+    {
+      "id": 49,
+      "name": "Бур D-3",
+      "categoryId": 12,
+      "values": {
+        "3": "270",
+        "9": "16"
+      },
+      "price_buy": "700",
+      "price_sale": "550",
+      "icon": "tool",
+      "slotId": 6,
+      "prop2": [
+        "Железо",
+        "Медь",
+        "Золото",
+        "Камень"
+      ]
+    },
+    {
+      "id": 50,
+      "name": "Бур D-4",
+      "categoryId": 12,
+      "values": {
+        "3": "320",
+        "9": "20"
+      },
+      "price_buy": "800",
+      "price_sale": "550",
+      "icon": "tool",
+      "slotId": 6,
+      "prop2": [
+        "Железо",
+        "Медь",
+        "Золото",
+        "Камень"
+      ]
+    },
+    {
+      "id": 51,
+      "name": "Бур D-5",
+      "categoryId": 12,
+      "values": {
+        "3": "370",
+        "9": "24"
+      },
+      "price_buy": "900",
+      "price_sale": "550",
+      "icon": "tool",
+      "slotId": 6,
+      "prop2": [
+        "Железо",
+        "Медь",
+        "Золото",
+        "Камень"
+      ]
+    },
+    {
+      "id": 52,
+      "name": "Переработчик R-1",
+      "categoryId": 13,
+      "values": {
+        "3": "270",
+        "10": "3"
+      },
+      "price_buy": "550",
+      "price_sale": "400",
+      "icon": "tool",
+      "slotId": 7
+    },
+    {
+      "id": 53,
+      "name": "Переработчик R-2",
+      "categoryId": 13,
+      "values": {
+        "3": "340",
+        "10": "5"
+      },
+      "price_buy": "650",
+      "price_sale": "400",
+      "icon": "tool",
+      "slotId": 7
+    },
+    {
+      "id": 54,
+      "name": "Переработчик R-3",
+      "categoryId": 13,
+      "values": {
+        "3": "410",
+        "10": "7"
+      },
+      "price_buy": "750",
+      "price_sale": "400",
+      "icon": "tool",
+      "slotId": 7
+    },
+    {
+      "id": 55,
+      "name": "Переработчик R-4",
+      "categoryId": 13,
+      "values": {
+        "3": "480",
+        "10": "9"
+      },
+      "price_buy": "850",
+      "price_sale": "700",
+      "icon": "tool",
+      "slotId": 7
+    },
+    {
+      "id": 56,
+      "name": "Переработчик R-5",
+      "categoryId": 13,
+      "values": {
+        "3": "550",
+        "10": "11"
+      },
+      "price_buy": "950",
+      "price_sale": "700",
+      "icon": "tool",
+      "slotId": 7
+    },
+    {
+      "id": 57,
+      "name": "Радар R-1",
+      "categoryId": 11,
+      "values": {
+        "3": "26",
+        "11": "35"
+      },
+      "price_buy": "390",
+      "price_sale": "40",
+      "icon": "radar",
+      "slotId": 5
+    },
+    {
+      "id": 58,
+      "name": "Радар R-2",
+      "categoryId": 11,
+      "values": {
+        "3": "32",
+        "11": "50"
+      },
+      "price_buy": "480",
+      "price_sale": "330",
+      "icon": "radar",
+      "slotId": 5
+    },
+    {
+      "id": 59,
+      "name": "Радар R-3",
+      "categoryId": 11,
+      "values": {
+        "3": "38",
+        "11": "65"
+      },
+      "price_buy": "570",
+      "price_sale": "320",
+      "icon": "radar",
+      "slotId": 5
+    },
+    {
+      "id": 60,
+      "name": "Радар R-4",
+      "categoryId": 11,
+      "values": {
+        "3": "44",
+        "11": "80"
+      },
+      "price_buy": "660",
+      "price_sale": "310",
+      "icon": "radar",
+      "slotId": 5
+    },
+    {
+      "id": 61,
+      "name": "Сканер C-1",
+      "categoryId": 11,
+      "values": {
+        "3": "17",
+        "11": "12"
+      },
+      "price_buy": "370",
+      "price_sale": "220",
+      "icon": "radar",
+      "slotId": 5
+    },
+    {
+      "id": 62,
+      "name": "Сканер C-2",
+      "categoryId": 11,
+      "values": {
+        "3": "22",
+        "11": "16"
+      },
+      "price_buy": "450",
+      "price_sale": "200",
+      "icon": "radar",
+      "slotId": 5
+    },
+    {
+      "id": 63,
+      "name": "Сканер C-3",
+      "categoryId": 11,
+      "values": {
+        "3": "27",
+        "11": "20"
+      },
+      "price_buy": "530",
+      "price_sale": "180",
+      "icon": "radar",
+      "slotId": 5
+    },
+    {
+      "id": 64,
+      "name": "Сканер C-4",
+      "categoryId": 11,
+      "values": {
+        "3": "32",
+        "11": "24"
+      },
+      "price_buy": "610",
+      "price_sale": "460",
+      "icon": "radar",
+      "slotId": 5
+    },
+    {
+      "id": 65,
+      "name": "Спектрометр SP-1",
+      "categoryId": 11,
+      "values": {
+        "3": "38",
+        "11": "140"
+      },
+      "price_buy": "820",
+      "price_sale": "570",
+      "icon": "radar",
+      "slotId": 8
+    },
+    {
+      "id": 66,
+      "name": "Лидар L-2",
+      "categoryId": 11,
+      "values": {
+        "3": "52",
+        "11": "220"
+      },
+      "price_buy": "960",
+      "price_sale": "610",
+      "icon": "radar",
+      "slotId": 8
+    },
+    {
+      "id": 67,
+      "name": "Ремонтный манипулятор M-1",
+      "categoryId": 14,
+      "values": {
+        "3": "110",
+        "15": "12"
+      },
+      "price_buy": "900",
+      "price_sale": "750",
+      "icon": "tool",
+      "slotId": 9
+    },
+    {
+      "id": 68,
+      "name": "Грузовой отсек 500 кг",
+      "categoryId": 15,
+      "values": {
+        "3": "60",
+        "12": "500"
+      },
+      "price_buy": "351",
+      "price_sale": "101",
+      "icon": "crate",
+      "slotId": 9,
+      "prop2": [
+        "Камень"
+      ]
+    },
+    {
+      "id": 69,
+      "name": "Грузовой отсек 2 т",
+      "categoryId": 15,
+      "values": {
+        "3": "140",
+        "12": "2000"
+      },
+      "price_buy": "500",
+      "price_sale": "150",
+      "icon": "crate",
+      "slotId": 9,
+      "prop2": [
+        "Железо",
+        "Медь"
+      ]
+    },
+    {
+      "id": 70,
+      "name": "Грузовой отсек 5 т",
+      "categoryId": 15,
+      "values": {
+        "3": "260",
+        "12": "5000"
+      },
+      "price_buy": "700",
+      "price_sale": "550",
+      "icon": "crate",
+      "slotId": 9,
+      "prop2": [
+        "Медь",
+        "Золото"
+      ]
+    },
+    {
+      "id": 71,
+      "name": "Грузовой отсек 10 т",
+      "categoryId": 15,
+      "values": {
+        "3": "450",
+        "12": "10000"
+      },
+      "price_buy": "900",
+      "price_sale": "650",
+      "icon": "crate",
+      "slotId": 9,
+      "prop2": [
+        "Железо",
+        "Медь",
+        "Золото",
+        "Камень",
+        "Водяной лёд",
+        "Очищенная вода",
+        "Кислород",
+        "Водород",
+        "Азот",
+        "Аммиак",
+        "Натриевая селитра",
+        "Калиевая селитра",
+        "Метан",
+        "Этан",
+        "Пропан",
+        "Этилен",
+        "Ацетилен",
+        "Метанол",
+        "Формальдегид",
+        "Углекислый газ",
+        "Угарный газ",
+        "Аргон",
+        "Гелий",
+        "Неон",
+        "Криптон",
+        "Ксенон",
+        "Реголит",
+        "Базальт",
+        "Кварцевый песок",
+        "Кремнезём",
+        "Глина",
+        "Железная руда",
+        "Боксит",
+        "Медная руда",
+        "Никелевая руда",
+        "Кобальтовая руда",
+        "Хромит",
+        "Марганцевая руда",
+        "Титановая руда",
+        "Фосфорит",
+        "Фторапатит",
+        "Флюорит",
+        "Криолит",
+        "Гипс",
+        "Галит",
+        "Сильвин",
+        "Эпсомит",
+        "Мирабилит",
+        "Литиевая руда",
+        "Графит",
+        "Урановая руда",
+        "Ториевая руда",
+        "Алюминий",
+        "Никель",
+        "Кобальт",
+        "Хром",
+        "Марганец",
+        "Титан",
+        "Магний",
+        "Цинк",
+        "Олово",
+        "Свинец",
+        "Литий",
+        "Кремний",
+        "Бор",
+        "Вольфрам",
+        "Молибден",
+        "Ниобий",
+        "Тантал",
+        "Бериллий",
+        "Галлий",
+        "Германий",
+        "Ванадий",
+        "Цирконий",
+        "Фосфор",
+        "Сера",
+        "Серебро",
+        "Церий",
+        "Лантан",
+        "Неодим",
+        "Празеодим",
+        "Самарий",
+        "Тербий",
+        "Диспрозий",
+        "Иттрий",
+        "Платина",
+        "Палладий",
+        "Родий",
+        "Рутений",
+        "Иридий",
+        "Осмий",
+        "Урановый концентрат",
+        "Ториевый концентрат",
+        "Дейтерий",
+        "Гелий-3",
+        "Лунный реголит",
+        "Кобальтовый концентрат",
+        "Сверхпроводящий сплав",
+        "Тритиевое топливо"
+      ]
+    },
+    {
+      "id": 72,
+      "name": "Ремкомплект",
+      "categoryId": 17,
+      "values": {
+        "3": "2"
+      },
+      "price_buy": "351",
+      "price_sale": "1",
+      "icon": "tool",
+      "slotId": null
+    },
+    {
+      "id": 73,
+      "name": "Набор запчастей",
+      "categoryId": 17,
+      "values": {
+        "3": "6"
+      },
+      "price_buy": "380",
+      "price_sale": "230",
+      "icon": "tool",
+      "slotId": null
+    },
+    {
+      "id": 74,
+      "name": "Аптечка",
+      "categoryId": 17,
+      "values": {
+        "3": "3"
+      },
+      "price_buy": "420",
+      "price_sale": "170",
+      "icon": "tool",
+      "slotId": null
+    }
+  ],
+  "resources": [
+    {
+      "id": 75,
+      "name": "Железо",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "6",
+      "price_sale": "4",
+      "icon": "crate"
+    },
+    {
+      "id": 76,
+      "name": "Медь",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "9",
+      "price_sale": "6",
+      "icon": "crate"
+    },
+    {
+      "id": 77,
+      "name": "Золото",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "25",
+      "price_sale": "18",
+      "icon": "gem"
+    },
+    {
+      "id": 78,
+      "name": "Камень",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "3",
+      "price_sale": "2",
+      "icon": "gem"
+    },
+    {
+      "id": 79,
+      "name": "Водяной лёд",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "12",
+      "price_sale": "8",
+      "icon": "crate"
+    },
+    {
+      "id": 80,
+      "name": "Очищенная вода",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "18",
+      "price_sale": "12",
+      "icon": "crate"
+    },
+    {
+      "id": 81,
+      "name": "Кислород",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "20",
+      "price_sale": "13",
+      "icon": "fuel"
+    },
+    {
+      "id": 82,
+      "name": "Водород",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "30",
+      "price_sale": "20",
+      "icon": "fuel"
+    },
+    {
+      "id": 83,
+      "name": "Азот",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "18",
+      "price_sale": "12",
+      "icon": "fuel"
+    },
+    {
+      "id": 84,
+      "name": "Аммиак",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "28",
+      "price_sale": "18",
+      "icon": "fuel"
+    },
+    {
+      "id": 85,
+      "name": "Натриевая селитра",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "22",
+      "price_sale": "14",
+      "icon": "crate"
+    },
+    {
+      "id": 86,
+      "name": "Калиевая селитра",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "24",
+      "price_sale": "16",
+      "icon": "crate"
+    },
+    {
+      "id": 87,
+      "name": "Метан",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "30",
+      "price_sale": "20",
+      "icon": "fuel"
+    },
+    {
+      "id": 88,
+      "name": "Этан",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "35",
+      "price_sale": "23",
+      "icon": "fuel"
+    },
+    {
+      "id": 89,
+      "name": "Пропан",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "38",
+      "price_sale": "25",
+      "icon": "fuel"
+    },
+    {
+      "id": 90,
+      "name": "Этилен",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "45",
+      "price_sale": "30",
+      "icon": "fuel"
+    },
+    {
+      "id": 91,
+      "name": "Ацетилен",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "48",
+      "price_sale": "32",
+      "icon": "fuel"
+    },
+    {
+      "id": 92,
+      "name": "Метанол",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "55",
+      "price_sale": "36",
+      "icon": "fuel"
+    },
+    {
+      "id": 93,
+      "name": "Формальдегид",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "65",
+      "price_sale": "43",
+      "icon": "fuel"
+    },
+    {
+      "id": 94,
+      "name": "Углекислый газ",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "15",
+      "price_sale": "10",
+      "icon": "fuel"
+    },
+    {
+      "id": 95,
+      "name": "Угарный газ",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "35",
+      "price_sale": "23",
+      "icon": "fuel"
+    },
+    {
+      "id": 96,
+      "name": "Аргон",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "40",
+      "price_sale": "26",
+      "icon": "fuel"
+    },
+    {
+      "id": 97,
+      "name": "Гелий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "100",
+      "price_sale": "66",
+      "icon": "fuel"
+    },
+    {
+      "id": 98,
+      "name": "Неон",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "160",
+      "price_sale": "106",
+      "icon": "fuel"
+    },
+    {
+      "id": 99,
+      "name": "Криптон",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "250",
+      "price_sale": "165",
+      "icon": "fuel"
+    },
+    {
+      "id": 100,
+      "name": "Ксенон",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "350",
+      "price_sale": "231",
+      "icon": "fuel"
+    },
+    {
+      "id": 101,
+      "name": "Реголит",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "5",
+      "price_sale": "3",
+      "icon": "crate"
+    },
+    {
+      "id": 102,
+      "name": "Базальт",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "8",
+      "price_sale": "5",
+      "icon": "crate"
+    },
+    {
+      "id": 103,
+      "name": "Кварцевый песок",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "8",
+      "price_sale": "5",
+      "icon": "crate"
+    },
+    {
+      "id": 104,
+      "name": "Кремнезём",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "10",
+      "price_sale": "6",
+      "icon": "crate"
+    },
+    {
+      "id": 105,
+      "name": "Глина",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "5",
+      "price_sale": "3",
+      "icon": "crate"
+    },
+    {
+      "id": 106,
+      "name": "Железная руда",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "18",
+      "price_sale": "12",
+      "icon": "crate"
+    },
+    {
+      "id": 107,
+      "name": "Боксит",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "15",
+      "price_sale": "10",
+      "icon": "crate"
+    },
+    {
+      "id": 108,
+      "name": "Медная руда",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "25",
+      "price_sale": "17",
+      "icon": "crate"
+    },
+    {
+      "id": 109,
+      "name": "Никелевая руда",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "35",
+      "price_sale": "23",
+      "icon": "crate"
+    },
+    {
+      "id": 110,
+      "name": "Кобальтовая руда",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "60",
+      "price_sale": "40",
+      "icon": "crate"
+    },
+    {
+      "id": 111,
+      "name": "Хромит",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "28",
+      "price_sale": "18",
+      "icon": "crate"
+    },
+    {
+      "id": 112,
+      "name": "Марганцевая руда",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "22",
+      "price_sale": "15",
+      "icon": "crate"
+    },
+    {
+      "id": 113,
+      "name": "Титановая руда",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "48",
+      "price_sale": "32",
+      "icon": "crate"
+    },
+    {
+      "id": 114,
+      "name": "Фосфорит",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "18",
+      "price_sale": "12",
+      "icon": "crate"
+    },
+    {
+      "id": 115,
+      "name": "Фторапатит",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "45",
+      "price_sale": "30",
+      "icon": "crate"
+    },
+    {
+      "id": 116,
+      "name": "Флюорит",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "28",
+      "price_sale": "18",
+      "icon": "crate"
+    },
+    {
+      "id": 117,
+      "name": "Криолит",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "45",
+      "price_sale": "30",
+      "icon": "crate"
+    },
+    {
+      "id": 118,
+      "name": "Гипс",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "7",
+      "price_sale": "4",
+      "icon": "crate"
+    },
+    {
+      "id": 119,
+      "name": "Галит",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "5",
+      "price_sale": "3",
+      "icon": "crate"
+    },
+    {
+      "id": 120,
+      "name": "Сильвин",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "12",
+      "price_sale": "8",
+      "icon": "crate"
+    },
+    {
+      "id": 121,
+      "name": "Эпсомит",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "15",
+      "price_sale": "10",
+      "icon": "crate"
+    },
+    {
+      "id": 122,
+      "name": "Мирабилит",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "12",
+      "price_sale": "8",
+      "icon": "crate"
+    },
+    {
+      "id": 123,
+      "name": "Литиевая руда",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "90",
+      "price_sale": "60",
+      "icon": "crate"
+    },
+    {
+      "id": 124,
+      "name": "Графит",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "35",
+      "price_sale": "23",
+      "icon": "crate"
+    },
+    {
+      "id": 125,
+      "name": "Урановая руда",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "180",
+      "price_sale": "120",
+      "icon": "crate"
+    },
+    {
+      "id": 126,
+      "name": "Ториевая руда",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "140",
+      "price_sale": "92",
+      "icon": "crate"
+    },
+    {
+      "id": 127,
+      "name": "Алюминий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "35",
+      "price_sale": "23",
+      "icon": "crate"
+    },
+    {
+      "id": 128,
+      "name": "Никель",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "45",
+      "price_sale": "30",
+      "icon": "crate"
+    },
+    {
+      "id": 129,
+      "name": "Кобальт",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "70",
+      "price_sale": "46",
+      "icon": "crate"
+    },
+    {
+      "id": 130,
+      "name": "Хром",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "42",
+      "price_sale": "28",
+      "icon": "crate"
+    },
+    {
+      "id": 131,
+      "name": "Марганец",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "28",
+      "price_sale": "18",
+      "icon": "crate"
+    },
+    {
+      "id": 132,
+      "name": "Титан",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "55",
+      "price_sale": "36",
+      "icon": "crate"
+    },
+    {
+      "id": 133,
+      "name": "Магний",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "25",
+      "price_sale": "16",
+      "icon": "crate"
+    },
+    {
+      "id": 134,
+      "name": "Цинк",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "26",
+      "price_sale": "17",
+      "icon": "crate"
+    },
+    {
+      "id": 135,
+      "name": "Олово",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "40",
+      "price_sale": "26",
+      "icon": "crate"
+    },
+    {
+      "id": 136,
+      "name": "Свинец",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "18",
+      "price_sale": "12",
+      "icon": "crate"
+    },
+    {
+      "id": 137,
+      "name": "Литий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "120",
+      "price_sale": "80",
+      "icon": "crate"
+    },
+    {
+      "id": 138,
+      "name": "Кремний",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "30",
+      "price_sale": "20",
+      "icon": "crate"
+    },
+    {
+      "id": 139,
+      "name": "Бор",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "85",
+      "price_sale": "56",
+      "icon": "crate"
+    },
+    {
+      "id": 140,
+      "name": "Вольфрам",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "180",
+      "price_sale": "120",
+      "icon": "crate"
+    },
+    {
+      "id": 141,
+      "name": "Молибден",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "130",
+      "price_sale": "86",
+      "icon": "crate"
+    },
+    {
+      "id": 142,
+      "name": "Ниобий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "125",
+      "price_sale": "83",
+      "icon": "crate"
+    },
+    {
+      "id": 143,
+      "name": "Тантал",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "250",
+      "price_sale": "165",
+      "icon": "crate"
+    },
+    {
+      "id": 144,
+      "name": "Бериллий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "300",
+      "price_sale": "198",
+      "icon": "crate"
+    },
+    {
+      "id": 145,
+      "name": "Галлий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "180",
+      "price_sale": "120",
+      "icon": "crate"
+    },
+    {
+      "id": 146,
+      "name": "Германий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "210",
+      "price_sale": "140",
+      "icon": "crate"
+    },
+    {
+      "id": 147,
+      "name": "Ванадий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "80",
+      "price_sale": "53",
+      "icon": "crate"
+    },
+    {
+      "id": 148,
+      "name": "Цирконий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "90",
+      "price_sale": "60",
+      "icon": "crate"
+    },
+    {
+      "id": 149,
+      "name": "Фосфор",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "35",
+      "price_sale": "23",
+      "icon": "crate"
+    },
+    {
+      "id": 150,
+      "name": "Сера",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "9",
+      "price_sale": "6",
+      "icon": "crate"
+    },
+    {
+      "id": 151,
+      "name": "Серебро",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "120",
+      "price_sale": "80",
+      "icon": "gem"
+    },
+    {
+      "id": 152,
+      "name": "Церий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "100",
+      "price_sale": "66",
+      "icon": "gem"
+    },
+    {
+      "id": 153,
+      "name": "Лантан",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "100",
+      "price_sale": "66",
+      "icon": "gem"
+    },
+    {
+      "id": 154,
+      "name": "Неодим",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "160",
+      "price_sale": "106",
+      "icon": "gem"
+    },
+    {
+      "id": 155,
+      "name": "Празеодим",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "160",
+      "price_sale": "106",
+      "icon": "gem"
+    },
+    {
+      "id": 156,
+      "name": "Самарий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "220",
+      "price_sale": "145",
+      "icon": "gem"
+    },
+    {
+      "id": 157,
+      "name": "Тербий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "400",
+      "price_sale": "264",
+      "icon": "gem"
+    },
+    {
+      "id": 158,
+      "name": "Диспрозий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "300",
+      "price_sale": "198",
+      "icon": "gem"
+    },
+    {
+      "id": 159,
+      "name": "Иттрий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "180",
+      "price_sale": "120",
+      "icon": "gem"
+    },
+    {
+      "id": 160,
+      "name": "Платина",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "800",
+      "price_sale": "528",
+      "icon": "gem"
+    },
+    {
+      "id": 161,
+      "name": "Палладий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "600",
+      "price_sale": "396",
+      "icon": "gem"
+    },
+    {
+      "id": 162,
+      "name": "Родий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "1200",
+      "price_sale": "792",
+      "icon": "gem"
+    },
+    {
+      "id": 163,
+      "name": "Рутений",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "500",
+      "price_sale": "330",
+      "icon": "gem"
+    },
+    {
+      "id": 164,
+      "name": "Иридий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "1500",
+      "price_sale": "990",
+      "icon": "gem"
+    },
+    {
+      "id": 165,
+      "name": "Осмий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "1200",
+      "price_sale": "792",
+      "icon": "gem"
+    },
+    {
+      "id": 166,
+      "name": "Урановый концентрат",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "250",
+      "price_sale": "165",
+      "icon": "gem"
+    },
+    {
+      "id": 167,
+      "name": "Ториевый концентрат",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "190",
+      "price_sale": "125",
+      "icon": "gem"
+    },
+    {
+      "id": 168,
+      "name": "Дейтерий",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "280",
+      "price_sale": "185",
+      "icon": "fuel"
+    },
+    {
+      "id": 169,
+      "name": "Гелий-3",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "900",
+      "price_sale": "594",
+      "icon": "fuel"
+    },
+    {
+      "id": 170,
+      "name": "Лунный реголит",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "12",
+      "price_sale": "8",
+      "icon": "crate"
+    },
+    {
+      "id": 171,
+      "name": "Кобальтовый концентрат",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "110",
+      "price_sale": "72",
+      "icon": "gem"
+    },
+    {
+      "id": 172,
+      "name": "Сверхпроводящий сплав",
+      "categoryId": 18,
+      "values": {},
+      "price_buy": "420",
+      "price_sale": "280",
+      "icon": "gem"
+    },
+    {
+      "id": 173,
+      "name": "Тритиевое топливо",
+      "categoryId": 19,
+      "values": {},
+      "price_buy": "720",
+      "price_sale": "480",
+      "icon": "fuel"
+    }
+  ],
+  "categoriesEquipment": [
+    {
+      "id": 7,
+      "name": "Лазеры",
+      "propIds": [
+        3,
+        4,
+        5
+      ],
+      "kind": "equipment",
+      "isShip": false,
+      "icon": "bolt"
+    },
+    {
+      "id": 8,
+      "name": "Пулемёты",
+      "propIds": [
+        3,
+        4,
+        6
+      ],
+      "kind": "equipment",
+      "isShip": false,
+      "icon": "weapon"
+    },
+    {
+      "id": 9,
+      "name": "Щиты",
+      "propIds": [
+        3,
+        7,
+        8
+      ],
+      "kind": "equipment",
+      "isShip": false,
+      "icon": "shield"
+    },
+    {
+      "id": 10,
+      "name": "Двигатели",
+      "propIds": [
+        3,
+        13,
+        14
+      ],
+      "kind": "equipment",
+      "isShip": false,
+      "icon": "engine"
+    },
+    {
+      "id": 11,
+      "name": "Радары и сканеры",
+      "propIds": [
+        3,
+        11
+      ],
+      "kind": "equipment",
+      "isShip": false,
+      "icon": "radar"
+    },
+    {
+      "id": 12,
+      "name": "Добывающее",
+      "propIds": [
+        3,
+        9
+      ],
+      "kind": "equipment",
+      "isShip": false,
+      "icon": "tool"
+    },
+    {
+      "id": 13,
+      "name": "Переработка",
+      "propIds": [
+        3,
+        10
+      ],
+      "kind": "equipment",
+      "isShip": false,
+      "icon": "tool"
+    },
+    {
+      "id": 14,
+      "name": "Ремонтные модули",
+      "propIds": [
+        3,
+        15
+      ],
+      "kind": "equipment",
+      "isShip": false,
+      "icon": "tool"
+    },
+    {
+      "id": 15,
+      "name": "Грузовые отсеки",
+      "propIds": [
+        3,
+        12
+      ],
+      "kind": "equipment",
+      "isShip": false,
+      "icon": "crate"
+    },
+    {
+      "id": 16,
+      "name": "Топливные баки",
+      "propIds": [
+        3,
+        12
+      ],
+      "kind": "equipment",
+      "isShip": false,
+      "icon": "fuel"
+    },
+    {
+      "id": 17,
+      "name": "Расходники",
+      "propIds": [
+        3
+      ],
+      "kind": "equipment",
+      "isShip": false,
+      "icon": "tool"
+    }
+  ],
+  "categoriesResource": [
+    {
+      "id": 18,
+      "name": "Материалы",
+      "propIds": [],
+      "kind": "resources",
+      "isShip": false,
+      "icon": "crate"
+    },
+    {
+      "id": 19,
+      "name": "Топливо",
+      "propIds": [],
+      "kind": "resources",
+      "isShip": false,
+      "icon": "fuel"
+    }
+  ]
+}

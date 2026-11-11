@@ -13,13 +13,6 @@ export default function AuthPanel({children, header}: Props) {
                 {header}
             </header>
             <div className="portal-panel-body">{children}</div>
-            <footer className="portal-panel-foot">
-                <span className="portal-status-row">
-                    <span className="portal-pulse" aria-hidden="true"/>
-                    клиент готов
-                </span>
-                <span>КОСМИЧЕСКАЯ СЕТЬ</span>
-            </footer>
         </section>
     );
 }
