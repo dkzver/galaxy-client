@@ -1,68 +1,43 @@
-﻿// Управляет переходами между авторизацией, ангаром и космическими сценами.
+// Маршрутизация экранов: сессия пилота, ангар и космические сцены.
 import {useEffect, useState} from 'react';
-import {deleteAccount, fetchHangar} from './api';
-import AuthScreen from './components/AuthScreen';
-import HangarScreen from './components/HangarScreen';
+import {fetchHangar} from './api';
+import AuthScreen from './components/auth/AuthScreen';
+import HangarScreen from './components/hangar/HangarScreen';
 import SpaceScene from './components/SpaceScene';
-import type {AppScreen, AuthResponse, HangarStatus, SpaceZone} from './types';
+import {useSession} from './hooks/useSession';
+import type {HangarStatus, SpaceZone} from './types';
 
 export default function App() {
-    const [token, setToken] = useState(() => localStorage.getItem('galaxy-token') || '');
-    const [email, setEmail] = useState(() => localStorage.getItem('galaxy-email') || 'Пилот');
-    const [screen, setScreen] = useState<AppScreen>(token ? 'hangar' : 'auth');
+    const session = useSession();
     const [hangar, setHangar] = useState<HangarStatus | null>(null);
     const [zone, setZone] = useState<SpaceZone>('galaxy-map');
-    const [error, setError] = useState('');
 
     // Проверяет сохранённую сессию и загружает состояние ангара при входе.
     useEffect(() => {
-        if (!token) return;
-        fetchHangar(token)
+        if (!session.token) {
+            setHangar(null);
+            return;
+        }
+        fetchHangar(session.token)
             .then(setHangar)
-            .catch((cause: Error) => {
-                setError(cause.message);
-                localStorage.removeItem('galaxy-token');
-                setToken('');
-                setScreen('auth');
-            });
-    }, [token]);
+            .catch((cause: Error) => session.expire(cause.message));
+        // Запрос повторяется только при смене токена.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [session.token]);
 
-    // Сохраняет выданную сервером сессию и открывает ангар пилота.
-    function onAuthenticated(result: AuthResponse) {
-        localStorage.setItem('galaxy-token', result.token);
-        localStorage.setItem('galaxy-email', result.user.email);
-        localStorage.removeItem('galaxy-username');
-        setEmail(result.user.email);
-        setToken(result.token);
-        setError('');
-        setScreen('hangar');
+    if (session.screen === 'auth') {
+        return <AuthScreen onAuthenticated={session.login} initialError={session.error}/>;
     }
-
-    // Удаляет локальные данные сессии и возвращает пользователя на экран входа.
-    function logout() {
-        localStorage.removeItem('galaxy-token');
-        localStorage.removeItem('galaxy-email');
-        localStorage.removeItem('galaxy-username');
-        setToken('');
-        setHangar(null);
-        setScreen('auth');
+    if (session.screen === 'hangar') {
+        return <HangarScreen token={session.token} hangar={hangar} onHangarUpdate={setHangar}
+                             error={session.error} email={session.email}
+                             onLaunch={() => {
+                                 setZone('galaxy-map');
+                                 session.setScreen('space');
+                             }}
+                             onLogout={session.logout}
+                             onDeleteAccount={session.removeAccount}/>;
     }
-
-    // Удаляет аккаунт на сервере и только после успеха очищает локальную сессию.
-    async function removeAccount() {
-        await deleteAccount(token);
-        logout();
-    }
-
-    if (screen === 'auth') {
-        return <AuthScreen onAuthenticated={onAuthenticated} initialError={error}/>;
-    }
-    if (screen === 'hangar') {
-        return <HangarScreen token={token} hangar={hangar} onHangarUpdate={setHangar} error={error} email={email} onLaunch={() => {
-            setZone('galaxy-map');
-            setScreen('space');
-        }} onLogout={logout} onDeleteAccount={removeAccount}/>;
-    }
-    return <SpaceScene token={token} username={email} zone={zone} onZoneChange={setZone}
-                       onReturn={() => setScreen('hangar')}/>;
+    return <SpaceScene token={session.token} username={session.email} zone={zone}
+                       onZoneChange={setZone} onReturn={() => session.setScreen('hangar')}/>;
 }

@@ -3,7 +3,7 @@ import {useEffect, useRef} from 'react';
 import * as THREE from 'three';
 import {useSpaceSocket} from '../hooks/useSpaceSocket';
 import type {SpaceZone} from '../types';
-import {BackIcon, MapIcon} from './Icons';
+import {BackIcon, MapIcon} from './ui/Icons';
 
 interface Props {
     token: string;

@@ -137,13 +137,6 @@
 .hangar-screen .map-link:disabled:hover { background: rgba(122, 236, 224, .05); border-color: rgba(150, 190, 255, .25); }
 .hangar-screen .map-link svg { width: 13px; height: 13px; flex: none; color: var(--accent); }
 .hangar-screen .brand .map-link .map-link-label { margin-top: 0; color: inherit; font: inherit; letter-spacing: inherit; }
-.hangar-screen .build-badge {
-  margin-left: 6px; padding: 3px 8px;
-  border: 1px solid var(--line-soft); border-radius: 4px;
-  color: var(--text-muted); background: transparent;
-  font: 500 10px var(--mono); letter-spacing: .12em; text-transform: uppercase;
-  white-space: nowrap;
-}
 .hangar-screen .station-status {
   color: var(--text-muted); font: 500 11px var(--mono); letter-spacing: .12em; gap: 9px;
   min-width: 0; overflow: hidden; white-space: nowrap;
@@ -154,7 +147,6 @@
   color: var(--text-soft);
 }
 .hangar-screen .pulse { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px rgba(117, 223, 210, .7); }
-.hangar-screen .divider { width: 1px; height: 12px; background: rgba(120, 160, 170, .25); margin: 0 5px; }
 .hangar-screen .balance > span {
   width: 34px; height: 34px; display: grid; place-items: center;
   color: var(--warning); border: 1px solid rgba(255, 215, 154, .35); border-radius: 4px;
@@ -282,20 +274,6 @@
 .hangar-screen .catalog-category { justify-content: flex-start; text-transform: none; letter-spacing: .02em; }
 .hangar-screen .catalog-category-copy { display: grid; gap: 2px; min-width: 0; text-align: left; }
 .hangar-screen .catalog-category-count { color: var(--text-muted); font: 10px var(--mono); }
-.hangar-screen .catalog-category-empty { color: var(--text-dim); font: 10px var(--mono); padding: 3px 1px; }
-
-.hangar-screen .subcategory-bar { display: flex; align-items: center; gap: 10px; min-height: 24px; }
-.hangar-screen .subcategory-title {
-  flex: none;
-  font: 500 10px var(--mono);
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-.hangar-screen .subcategory-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-.hangar-screen .sub-chip { padding: 0 8px; }
-.hangar-screen .sub-chip .sub-count { font-size: 10px; opacity: .55; letter-spacing: 0; }
-.hangar-screen .sub-chip.active .sub-count { opacity: .7; }
 
 /* ===== Сетка магазина ====================================================== */
 
@@ -511,14 +489,6 @@
   cursor: default;
 }
 .hangar-screen .hold-tile:hover { border-color: rgba(150, 190, 255, .22); background: rgba(9, 24, 25, .50); }
-.hangar-screen .hold-capacity {
-  max-width: 100%;
-  overflow: hidden;
-  color: var(--text-muted);
-  font: 9px var(--mono);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .hangar-screen .slot-tile.empty { border-style: dashed; color: rgba(122, 236, 224, .28); cursor: default; }
 .hangar-screen .slot-tile.empty:hover { border-color: rgba(122, 236, 224, .28); background: rgba(9, 24, 25, .50); }
 .hangar-screen .slot-tile.empty.has-goods { cursor: pointer; }
@@ -544,7 +514,6 @@
 }
 .hangar-screen .slot-cargo-chip:hover { border-color: rgba(122, 236, 224, .70); background: rgba(9, 24, 25, .95); }
 .hangar-screen .slot-cargo-chip svg { width: 10px; height: 10px; }
-.hangar-screen .slot-cargo-more { color: var(--text); font: 10px var(--mono); padding: 0 2px; }
 
 .hangar-screen .hold-list { display: grid; gap: 8px; }
 .hangar-screen .hold-row {
@@ -584,30 +553,10 @@
   padding: 8px 0;
 }
 
-/* Груз контейнера в модалке слота */
-.hangar-screen .slot-cargo-wrap { display: grid; gap: 8px; margin-top: 14px; }
-.hangar-screen .slot-cargo {
-  display: grid; gap: 5px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  background: rgba(9, 24, 25, .30);
-}
-.hangar-screen .slot-cargo-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.hangar-screen .slot-cargo-head strong { font: 600 13px var(--sans); }
-.hangar-screen .slot-cargo-head span { color: var(--text-muted); font: 10px var(--mono); letter-spacing: .08em; }
-.hangar-screen .slot-cargo-list { display: flex; flex-wrap: wrap; gap: 6px; }
-.hangar-screen .slot-cargo-list span {
-  color: var(--text);
-  font-size: 13px;
-  padding: 2px 6px;
-  border: 1px solid var(--line-soft);
-}
-
 /* ===== Док кораблей ======================================================== */
 
 .hangar-screen .dock-panel { flex: none; margin-bottom: 16px; }
 .hangar-screen .dock-body { padding: 8px; display: flex; }
-.hangar-screen .ship-dock { border: 0; padding: 0; }
 .hangar-screen .ship-list {
   display: flex; flex-wrap: nowrap; justify-content: flex-start; align-items: flex-start;
   gap: 10px; overflow-x: auto; padding-bottom: 4px;
@@ -759,12 +708,9 @@
   .hangar-screen .brand > div { max-width: clamp(100px, 32vw, 240px); }
   .hangar-screen .map-link { width: 34px; height: 34px; padding: 0; margin-left: 2px; }
   .hangar-screen .map-link-label { display: none; }
-  .hangar-screen .build-badge { display: none; }
   .hangar-screen .content { padding: 0 12px; }
   .hangar-screen .category-tabs { flex-wrap: nowrap; overflow-x: auto; }
   .hangar-screen .category-tabs .tab { flex: 0 0 auto; min-width: 92px; }
-  .hangar-screen .subcategory-tabs { flex-wrap: nowrap; overflow-x: auto; }
-  .hangar-screen .subcategory-bar { align-items: flex-start; flex-direction: column; gap: 6px; }
   .hangar-screen .market-grid,.hangar-screen 
   .market-grid.no-cargo {
     grid-template-columns: minmax(0, 1fr);
@@ -796,60 +742,6 @@
   border: 1px solid var(--line-soft);
   color: var(--text-muted);
   font: 10px var(--mono);
-}
-
-.hangar-screen .hero-ship {
-  position: relative;
-  min-height: 180px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  margin: 4px 0;
-  border: 1px solid var(--line);
-  background:
-    radial-gradient(ellipse at center, rgba(122, 236, 224, .10), transparent 62%),
-    rgba(9, 24, 25, .32);
-  color: var(--accent);
-}
-
-.hangar-screen .hero-ship .ship-glyph {
-  z-index: 1;
-  width: 88%;
-  color: var(--purple);
-  filter: drop-shadow(0 0 16px rgba(170, 136, 246, .22));
-}
-
-.hangar-screen .orbit {
-  position: absolute;
-  width: 72%;
-  aspect-ratio: 1;
-  border: 1px solid rgba(122, 236, 224, .13);
-  border-radius: 50%;
-}
-
-.hangar-screen .orbit-one {
-  transform: scaleY(.35) rotate(-22deg);
-}
-
-.hangar-screen .orbit-two {
-  transform: scaleY(.35) rotate(34deg);
-  border-color: rgba(170, 136, 246, .18);
-}
-
-.hangar-screen .axis-label {
-  position: absolute;
-  bottom: 8px;
-  color: var(--text-muted);
-  font: 9px var(--mono);
-  letter-spacing: .12em;
-}
-
-.hangar-screen .axis-label.left {
-  left: 9px;
-}
-
-.hangar-screen .axis-label.right {
-  right: 9px;
 }
 
 .hangar-screen .shop-note {
@@ -991,15 +883,6 @@
   border-color: rgba(122, 236, 224, .5);
   background: rgba(122, 236, 224, .1);
   box-shadow: 0 0 12px rgba(87, 216, 195, .15), inset 0 1px 0 rgba(255, 255, 255, .12);
-}
-
-.hangar-screen .ship-buy-visual {
-  display: grid;
-  flex: 1;
-  width: 100%;
-  place-items: center;
-  color: var(--accent);
-  border-bottom: 1px solid var(--line-row);
 }
 
 .hangar-screen .ship-buy-label {
@@ -1159,8 +1042,6 @@
   color: var(--danger-text);
   font: 11px/1.5 var(--mono);
 }
-
-.hangar-screen .ship-sale-block { margin-top: 10px; display: grid; gap: 4px; }
 
 /* Строка груза как кнопка: та же сетка, что и у обычной строки. */
 .hangar-screen button.trade-cargo-row {
