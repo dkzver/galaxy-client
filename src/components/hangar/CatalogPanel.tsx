@@ -38,10 +38,10 @@ export default function CatalogPanel({
     // Подсказка над кнопкой: только название и число позиций, без иконки.
     const tipProps = (title: string) => ({
         onMouseEnter: (event: MouseEvent<HTMLButtonElement>) =>
-            onShowTip(event.currentTarget, {title, rows: []}),
+            onShowTip(event.currentTarget, {title, rows: [], variant: 'label'}),
         onMouseLeave: onHideTip,
         onFocus: (event: FocusEvent<HTMLButtonElement>) =>
-            onShowTip(event.currentTarget, {title, rows: []}),
+            onShowTip(event.currentTarget, {title, rows: [], variant: 'label'}),
         onBlur: onHideTip,
     });
 

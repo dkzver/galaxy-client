@@ -4,7 +4,8 @@ import {capacityOf, categoryOf, findEquipment, massOf, type CatalogItem} from '.
 import {formatNumber} from './format';
 
 export type TipRow = {icon?: string; name: string; lines: string[]};
-export type TipContent = {title: string; rows: TipRow[]; note?: string};
+// 'label' — компактная подпись над кнопкой фильтра, без строк и иконок.
+export type TipContent = {title: string; rows: TipRow[]; note?: string; variant?: 'label'};
 
 function equipmentMeta(model: CatalogItem | null | undefined) {
     const category = categoryOf(model, 'equipment');

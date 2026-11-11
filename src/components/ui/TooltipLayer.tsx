@@ -13,7 +13,8 @@ type Props = {
 export default function TooltipLayer({content, placed, boxRef}: Props) {
     if (!content) return null;
     return createPortal(
-        <div className="hangar-slot-tooltip" role="tooltip" ref={boxRef}
+        <div className={`hangar-slot-tooltip${content.variant === 'label' ? ' hangar-slot-tooltip--label' : ''}`}
+             role="tooltip" ref={boxRef}
              style={{left: 0, top: 0, visibility: placed ? 'visible' : 'hidden'}}>
             <h4>{content.title}</h4>
             {content.rows.length > 0 && (
