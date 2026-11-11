@@ -616,7 +616,7 @@
 .hangar-screen .ship-list::-webkit-scrollbar { height: 8px; }
 .hangar-screen .ship-list::-webkit-scrollbar-thumb { background: rgba(120, 160, 170, .35); border-radius: 4px; }
 .hangar-screen .ship-card {
-  width: 82px; height: 82px; flex: none;
+  width: 96px; height: 96px; flex: none;
   display: flex; flex-direction: column; justify-content: space-between;
   gap: 8px; padding: 10px;
   color: var(--text-soft); text-align: left;
@@ -649,8 +649,7 @@
   border-bottom: 1px solid var(--line-row); padding: 0 0 8px;
 }
 .hangar-screen .ship-card.active .ship-visual { color: var(--accent-bright); }
-.hangar-screen .ship-glyph { width: min(86%, 520px); color: var(--purple); }
-.hangar-screen .ship-glyph.compact { width: 104px; }
+.hangar-screen .ship-card .ship-visual { padding-bottom: 4px; }
 .hangar-screen .active-tag {
   position: absolute; left: 0; top: 0; padding: 2px 5px;
   color: var(--bg); background: var(--purple);
@@ -761,7 +760,6 @@
   .hangar-screen .item-row { grid-template-columns: 32px minmax(0, 1fr); }
   .hangar-screen .item-meta { display: none; }
   .hangar-screen .ship-list { gap: 8px; }
-  .hangar-screen .ship-card { width: 140px; height: 140px; }
 }
 
 @media (max-width: 720px) {
@@ -979,7 +977,7 @@
 
 .hangar-screen .ship-gallery .ship-list {
   display: grid;
-  --ship-gallery-card-width: 82px;
+  --ship-gallery-card-width: 96px;
   grid-template-columns: repeat(var(--ship-gallery-visible-count, 1), var(--ship-gallery-card-width));
   gap: 10px;
   min-width: 0;
@@ -988,7 +986,7 @@
 }
 
 .hangar-screen .ship-buy-card {
-  flex: 0 0 82px;
+  flex: 0 0 96px;
   align-items: center;
   justify-content: center;
   gap: 4px;
@@ -1124,6 +1122,25 @@
   }
 
 }
+
+/* Заголовок трюма — кнопка выбора всего трюма. */
+.hangar-screen button.hold-head {
+  width: 100%; padding: 0; border: 0; background: transparent;
+  color: inherit; font: inherit; cursor: pointer; text-align: left;
+}
+.hangar-screen button.hold-head:hover strong { color: var(--accent-bright); }
+.hangar-screen .hold-row.selected {
+  border-color: rgba(122, 236, 224, .55);
+  background: rgba(122, 236, 224, .06);
+}
+.hangar-screen .hold-row.selected .hold-head strong { color: var(--accent-bright); }
+
+/* ===== Карточка корабля: вкладки ========================================== */
+
+.hangar-screen .ship-tabs { margin-bottom: 2px; }
+.hangar-screen .ship-tabs .tab { flex: 0 1 auto; min-width: 0; }
+.hangar-screen .ship-tabs .tab small { color: var(--text-muted); font: 10px var(--mono); letter-spacing: 0; }
+.hangar-screen .ship-tabs .tab.active small { color: var(--accent-bright); }
 
 /* ===== Торговля: выбор, причина отказа, продажа корабля ==================== */
 
