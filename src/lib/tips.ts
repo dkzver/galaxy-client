@@ -3,7 +3,7 @@ import type {HangarCargoLine, HangarEquipmentInstance, HangarHold, HangarSlot} f
 import {capacityOf, categoryOf, findEquipment, massOf, type CatalogItem} from './catalog';
 import {formatNumber} from './format';
 
-export type TipRow = {icon: string; name: string; lines: string[]};
+export type TipRow = {icon?: string; name: string; lines: string[]};
 export type TipContent = {title: string; rows: TipRow[]; note?: string};
 
 function equipmentMeta(model: CatalogItem | null | undefined) {

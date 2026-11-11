@@ -675,6 +675,7 @@
   pointer-events: none;
 }
 .hangar-slot-tooltip h4 { margin: 0 0 8px; font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.hangar-slot-tooltip h4:only-child { margin-bottom: 0; }
 .hangar-slot-tooltip small { display: block; margin-top: 7px; font: 10px var(--mono); color: var(--text-muted); }
 .hangar-screen .tip-list { display: grid; gap: 7px; }
 .hangar-screen .tip-item { display: flex; align-items: flex-start; gap: 7px; }

@@ -119,7 +119,9 @@ export default function HangarScreen({
                         <CatalogPanel activeTab={selection.tab} activeCategory={selection.categoryId}
                                       onSelectTab={actions.selectTab}
                                       onSelectCategory={actions.selectCategory}
-                                      onSelectAll={actions.selectAllCategories}/>
+                                      onSelectAll={actions.selectAllCategories}
+                                      onShowTip={(target, content) => tooltip.showTip(target, content, 'above')}
+                                      onHideTip={tooltip.hideTip}/>
 
                         {/* Колонка 1: корабль игрока. Выбор в доке меняет именно её. */}
                         <section className="inventory-panel panel-block glass ship-column" id="shipPanel">

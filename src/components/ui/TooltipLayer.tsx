@@ -20,7 +20,7 @@ export default function TooltipLayer({content, placed, boxRef}: Props) {
                 <div className="tip-list">
                     {content.rows.map((row, rowIndex) => (
                         <div className="tip-item" key={rowIndex}>
-                            <span className="tip-icon"><HangarIcon name={row.icon} size={16}/></span>
+                            {row.icon && <span className="tip-icon"><HangarIcon name={row.icon} size={16}/></span>}
                             <span className="tip-copy">
                                 <strong>{row.name}</strong>
                                 {row.lines.map((line, lineIndex) => <small key={lineIndex}>{line}</small>)}

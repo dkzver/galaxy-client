@@ -1,6 +1,8 @@
 // Панель каталога: вкладки типа и чипы групп верхнего уровня со счётчиками.
+import type {FocusEvent, MouseEvent} from 'react';
 import {catalog, inCategoryGroup, topCategories, type CatalogCategory, type CatalogItem, type CatalogTab} from '../../lib/catalog';
 import {tabLabels} from '../../lib/format';
+import type {TipContent} from '../../lib/tips';
 import {HangarIcon} from '../ui/HangarIcon';
 
 type Props = {
@@ -9,6 +11,8 @@ type Props = {
     onSelectTab: (tab: CatalogTab) => void;
     onSelectCategory: (categoryId: number) => void;
     onSelectAll: () => void;
+    onShowTip: (target: HTMLElement, content: TipContent) => void;
+    onHideTip: () => void;
 };
 
 const TAB_ICONS: Record<CatalogTab, string> = {all: 'grid', equipment: 'tool', resources: 'crate'};
@@ -19,6 +23,8 @@ export default function CatalogPanel({
     onSelectTab,
     onSelectCategory,
     onSelectAll,
+    onShowTip,
+    onHideTip,
 }: Props) {
     // Категории идут рядами: оборудование сверху, ресурсы снизу.
     const categoryRows: Array<{kind: 'equipment' | 'resources'; items: CatalogCategory[]; catalog: CatalogItem[]}> = [];
@@ -29,6 +35,16 @@ export default function CatalogPanel({
         categoryRows.push({kind: 'resources', items: topCategories('resources'), catalog: catalog.resources});
     }
 
+    // Подсказка над кнопкой: только название и число позиций, без иконки.
+    const tipProps = (title: string) => ({
+        onMouseEnter: (event: MouseEvent<HTMLButtonElement>) =>
+            onShowTip(event.currentTarget, {title, rows: []}),
+        onMouseLeave: onHideTip,
+        onFocus: (event: FocusEvent<HTMLButtonElement>) =>
+            onShowTip(event.currentTarget, {title, rows: []}),
+        onBlur: onHideTip,
+    });
+
     return (
         <section className="panel-block glass catalog-panel">
             <div className="panel-body catalog-body">
@@ -36,6 +52,7 @@ export default function CatalogPanel({
                     {(['all', 'equipment', 'resources'] as const).map((tab) => (
                         <button className={`tab${activeTab === tab ? ' active' : ''}`} key={tab}
                                 type="button" role="tab" aria-selected={activeTab === tab}
+                                {...tipProps(tabLabels[tab])}
                                 onClick={() => onSelectTab(tab)}>
                             <HangarIcon name={TAB_ICONS[tab]} size={13}/>
                             {tabLabels[tab]}
@@ -48,7 +65,8 @@ export default function CatalogPanel({
                             {rowIndex === 0 && (
                                 <button className={`tab catalog-category${activeCategory === null ? ' active' : ''}`}
                                         type="button" onClick={onSelectAll}
-                                        title="Все категории" aria-label="Все категории">
+                                        aria-label="Все категории"
+                                        {...tipProps('Все категории')}>
                                     <HangarIcon name="grid" size={13}/>
                                 </button>
                             )}
@@ -58,8 +76,8 @@ export default function CatalogPanel({
                                     <button
                                         className={`tab catalog-category${activeCategory === category.id ? ' active' : ''}`}
                                         key={category.id} type="button"
-                                        title={`${category.name} · ${count}`}
                                         aria-label={category.name}
+                                        {...tipProps(`${category.name} · ${count}`)}
                                         onClick={() => onSelectCategory(category.id)}>
                                         <HangarIcon name={category.icon} size={13}/>
                                     </button>
