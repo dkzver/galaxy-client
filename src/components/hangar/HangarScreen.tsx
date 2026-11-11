@@ -157,6 +157,7 @@ export default function HangarScreen({
                             <section className="inventory-panel panel-block glass cargo-column" id="cargoPanel">
                                 <ContentsList ship={ship}
                                               activeTab={selection.tab}
+                                              categoryId={selection.categoryId}
                                               holdId={selection.holdId}
                                               containerId={selection.containerId ?? selection.cargo?.containerId ?? null}
                                               selectedInstanceId={selection.instanceId}

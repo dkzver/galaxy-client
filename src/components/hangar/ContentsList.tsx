@@ -8,6 +8,7 @@ import {
     findEquipment,
     findResource,
     groupByCategories,
+    inCategoryGroup,
     type CatalogItem,
     type CatalogTab,
 } from '../../lib/catalog';
@@ -27,6 +28,7 @@ type ContentRow = {
 type Props = {
     ship: HangarShip | null;
     activeTab: CatalogTab;
+    categoryId: number | null;
     holdId: number | null;
     containerId: number | null;
     selectedInstanceId: number | null;
@@ -39,6 +41,7 @@ type Props = {
 export default function ContentsList({
     ship,
     activeTab,
+    categoryId,
     holdId,
     containerId,
     selectedInstanceId,
@@ -90,7 +93,16 @@ export default function ContentsList({
         return <div className="list-empty">{emptyText}</div>;
     }
 
-    const groups = groupByCategories(rows, (row) => row.model?.categoryId);
+    // Та же категория, что в списке товаров: третья колонка показывает только её.
+    const visibleRows = categoryId === null
+        ? rows
+        : rows.filter((row) => Boolean(row.model && inCategoryGroup(row.model, categoryId)));
+
+    if (visibleRows.length === 0) {
+        return <div className="list-empty">В этой категории на корабле ничего нет</div>;
+    }
+
+    const groups = groupByCategories(visibleRows, (row) => row.model?.categoryId);
 
     return (
         <div className="item-list panel-body">
