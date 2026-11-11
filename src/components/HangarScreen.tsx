@@ -31,7 +31,7 @@ type CatalogItem = {
     prop2?: string[];
 };
 
-type CatalogCategory = { id: number; name: string; icon?: string };
+type CatalogCategory = { id: number; name: string; icon?: string; parentId?: number | null };
 type CatalogTab = 'all' | 'equipment' | 'resources';
 
 type Catalog = {
@@ -56,6 +56,62 @@ type Catalog = {
 };
 
 const catalog = rawCatalog as unknown as Catalog;
+
+const ALL_CATEGORIES: CatalogCategory[] = [...catalog.categoriesEquipment, ...catalog.categoriesResource];
+const categoryById = new Map<number, CatalogCategory>(ALL_CATEGORIES.map((category) => [Number(category.id), category]));
+
+function findCategory(id?: number | null) {
+    return id == null ? null : categoryById.get(Number(id)) ?? null;
+}
+
+// Верхний уровень: для дочерней категории — её группа, для верхней — она сама.
+function categoryGroup(category?: CatalogCategory | null) {
+    if (!category) return null;
+    return category.parentId == null ? category : findCategory(category.parentId);
+}
+
+function categoryIdsInGroup(groupId: number | null): number[] | null {
+    if (groupId == null) return null;
+    const group = findCategory(groupId);
+    if (!group) return [Number(groupId)];
+    return [Number(group.id), ...ALL_CATEGORIES
+        .filter((category) => Number(category.parentId) === Number(group.id))
+        .map((category) => Number(category.id))];
+}
+
+function inCategoryGroup(item: CatalogItem, groupId: number | null) {
+    const ids = categoryIdsInGroup(groupId);
+    return ids === null || ids.includes(Number(item.categoryId ?? 0));
+}
+
+function topCategories(kind: 'equipment' | 'resources') {
+    const list = kind === 'equipment' ? catalog.categoriesEquipment : catalog.categoriesResource;
+    return list.filter((category) => category.parentId == null);
+}
+
+type CategoryGroupView<T> = {
+    id: number;
+    name: string;
+    icon: string;
+    items: T[];
+};
+
+// Заголовки в списках — подкатегории: группы остаются только в фильтре.
+function groupByCategories<T>(items: T[], categoryIdOf: (item: T) => number | null | undefined): CategoryGroupView<T>[] {
+    const groups = new Map<number, CategoryGroupView<T>>();
+
+    for (const item of items) {
+        const category = findCategory(categoryIdOf(item));
+        const id = category ? Number(category.id) : 0;
+        if (!groups.has(id)) {
+            groups.set(id, {id, name: category?.name ?? 'Прочее', icon: category?.icon ?? 'grid', items: []});
+        }
+        groups.get(id)!.items.push(item);
+    }
+
+    const order = new Map<number, number>(ALL_CATEGORIES.map((category, index) => [Number(category.id), index]));
+    return [...groups.values()].sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999));
+}
 
 const MASS_PROPERTY_ID = String(catalog.settings.id_propert_mass_value);
 const CAPACITY_PROPERTY_ID = String(catalog.properties.find((property) => property.name === 'Вместимость')?.id ?? 12);
@@ -442,7 +498,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
         visibleItems = catalog.resources.filter((item) => allowed.includes(item.name.trim().toLowerCase()));
     }
     if (activeCategory !== null) {
-        visibleItems = visibleItems.filter((item) => item.categoryId === activeCategory);
+        visibleItems = visibleItems.filter((item) => inCategoryGroup(item, activeCategory));
     }
 
     const selectedItem = selectedItemId !== null
@@ -492,31 +548,13 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
     // Категории идут рядами: оборудование сверху, ресурсы снизу.
     const categoryRows: Array<{kind: 'equipment' | 'resources'; items: CatalogCategory[]; catalog: CatalogItem[]}> = [];
     if (activeTab !== 'resources') {
-        categoryRows.push({kind: 'equipment', items: catalog.categoriesEquipment, catalog: catalog.equipments});
+        categoryRows.push({kind: 'equipment', items: topCategories('equipment'), catalog: catalog.equipments});
     }
     if (activeTab !== 'equipment') {
-        categoryRows.push({kind: 'resources', items: catalog.categoriesResource, catalog: catalog.resources});
+        categoryRows.push({kind: 'resources', items: topCategories('resources'), catalog: catalog.resources});
     }
 
-    const groups = visibleItems.reduce<Array<{id: string; name: string; icon: string; items: CatalogItem[]}>>((list, item) => {
-        const itemTab: CatalogTab = activeTab === 'all'
-            ? catalog.equipments.some((entry) => entry.id === item.id) ? 'equipment' : 'resources'
-            : activeTab;
-        const category = categoryOf(item, itemTab);
-        const groupId = `${itemTab}:${category?.id ?? 'other'}`;
-        let group = list.find((entry) => entry.id === groupId);
-        if (!group) {
-            group = {
-                id: groupId,
-                name: category?.name || tabLabels[itemTab],
-                icon: category?.icon || 'grid',
-                items: [],
-            };
-            list.push(group);
-        }
-        group.items.push(item);
-        return list;
-    }, []);
+    const groups = groupByCategories(visibleItems, (item) => item.categoryId);
 
     // Галерея дока показывает столько карточек, сколько помещается по фактической ширине.
     useEffect(() => {
@@ -708,13 +746,14 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                 : [...catalog.equipments, ...catalog.resources];
         const byCategory = activeCategory === null
             ? tabItems
-            : tabItems.filter((item) => item.categoryId === activeCategory);
+            : tabItems.filter((item) => inCategoryGroup(item, activeCategory));
         const first = byCategory[0] ?? tabItems[0];
         if (!first) return;
 
         setSelectedItemId(first.id);
-        if (activeCategory === null && first.categoryId != null) {
-            setActiveCategory(first.categoryId);
+        if (activeCategory === null) {
+            const group = categoryGroup(findCategory(first.categoryId));
+            setActiveCategory(group ? Number(group.id) : null);
         }
     }
 
@@ -884,7 +923,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                                         type="button" onClick={() => setActiveCategory(null)}>Все</button>
                                             )}
                                             {row.items.map((category) => {
-                                                const count = row.catalog.filter((item) => item.categoryId === category.id).length;
+                                                const count = row.catalog.filter((item) => inCategoryGroup(item, category.id)).length;
                                                 return (
                                                     <button
                                                         className={`tab catalog-category${activeCategory === category.id ? ' active' : ''}`}
@@ -1145,13 +1184,15 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                             <div className="ship-list" ref={shipListRef}
                                  style={{'--ship-gallery-visible-count': visibleShipCount} as CSSProperties}
                                  aria-live="polite">
-                                {dockShips.slice(shipGalleryStart, shipGalleryStart + visibleShipCount).map((row) => (
+                                {dockShips.slice(shipGalleryStart, shipGalleryStart + visibleShipCount).map((row) => {
+                                    const isSelected = row.isForSale
+                                        ? selectedForSaleShipId === row.id
+                                        : String(ship?.id) === String(row.id);
+                                    return (
                                     <button
-                                        className={`ship-card${row.isForSale
-                                            ? selectedForSaleShipId === row.id ? ' selected' : ''
-                                            : ' active'}`}
+                                        className={`ship-card${isSelected ? ' selected' : ''}`}
                                         key={row.id} type="button"
-                                        aria-current={!row.isForSale && String(ship?.id) === String(row.id)}
+                                        aria-current={isSelected}
                                         onClick={() => {
                                             setMessage('');
                                             if (row.isForSale) {
@@ -1168,7 +1209,7 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                             <span className="item-icon ship">
                                                 <HangarIcon name="ship" size={22}/>
                                             </span>
-                                            {!row.isForSale && String(ship?.id) === String(row.id)
+                                            {isSelected && !row.isForSale
                                                 && <span className="active-tag">ВЫБРАН</span>}
                                         </div>
                                         <div className="ship-meta">
@@ -1178,7 +1219,8 @@ export default function HangarScreen({token, hangar, onHangarUpdate, error, emai
                                                 : 'В АНГАРЕ'}</span>
                                         </div>
                                     </button>
-                                ))}
+                                    );
+                                })}
                                 {dockShips.length === 0 && (
                                     <div className="ship-gallery-empty">Корабль ангара ещё не загружен</div>
                                 )}
@@ -1684,72 +1726,56 @@ function ContentsList({ship, activeTab, holdId, containerId, selectedInstanceId,
         return <div className="list-empty">{emptyText}</div>;
     }
 
-    // Порядок групп — как у категорий каталога: сначала оборудование, затем ресурсы.
-    const order = new Map<number, number>();
-    catalog.categoriesEquipment.forEach((category, index) => order.set(category.id, index));
-    catalog.categoriesResource.forEach((category, index) => order.set(category.id, 100 + index));
-
-    const groups = new Map<number, {id: number; name: string; icon: string; rows: ContentRow[]}>();
-    for (const row of rows) {
-        const categories = row.kind === 'equipment' ? catalog.categoriesEquipment : catalog.categoriesResource;
-        const category = categories.find((entry) => entry.id === Number(row.model?.categoryId ?? 0));
-        const id = category?.id ?? 0;
-        if (!groups.has(id)) {
-            groups.set(id, {id, name: category?.name ?? 'Прочее', icon: category?.icon ?? 'grid', rows: []});
-        }
-        groups.get(id)!.rows.push(row);
-    }
-
-    const sorted = [...groups.values()].sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999));
+    const groups = groupByCategories(rows, (row) => row.model?.categoryId);
 
     return (
         <>
-            {sorted.map((group) => (
+            {groups.map((group) => (
                 <div className="list-group" key={group.id}>
                     <div className="list-group-head">
                         <span className="list-group-icon"><HangarIcon name={group.icon} size={13}/></span>
-                        <strong>{group.name}</strong><small>{group.rows.length}</small>
+                        <strong>{group.name}</strong><small>{group.items.length}</small>
                     </div>
-                    {group.rows.map((row) => {
-                        if (row.kind === 'cargo' && row.line) {
-                            const line = row.line;
-                            return (
-                                <button key={row.key} type="button"
-                                        className={`item-row${selectedCargo
-                                            && selectedCargo.containerId === row.instance.id
-                                            && selectedCargo.resourceId === line.resource_id ? ' selected' : ''}`}
-                                        onClick={() => onCargoClick(row.instance, line)}>
-                                    <span className="item-icon"><HangarIcon name={line.icon} size={22}/></span>
-                                    <span className="item-copy">
-                                        <strong>{line.name}</strong>
-                                        <span>{row.instance.name} · {locationLabel(row.instance)}</span>
-                                    </span>
-                                    <span className="item-meta">
-                                        <small>{formatNumber(line.amount_kg)} кг</small>
-                                        <b>{formatNumber(line.price_sale)} ¤/кг</b>
-                                    </span>
-                                </button>
-                            );
-                        }
-                        const instance = row.instance;
-                        return (
-                            <button key={row.key} type="button"
-                                    className={`item-row${selectedInstanceId === instance.id ? ' selected' : ''}`}
-                                    onClick={() => instance.is_container
-                                        ? onContainerClick(instance)
-                                        : onInstanceClick(instance)}>
-                                <span className="item-icon"><HangarIcon name={instance.icon} size={22}/></span>
-                                <span className="item-copy">
-                                    <strong>{instance.name}</strong>
-                                    <span>{locationLabel(instance)}</span>
-                                </span>
-                                <span className="item-meta">
-                                    <small>{formatNumber(instance.mass)} кг</small>
-                                    {instance.is_container
-                                        && <b>{formatNumber(instance.used_kg)} / {formatNumber(instance.capacity_kg)} кг</b>}
-                                </span>
-                            </button>
-                        );
+                    {group.items.map((row) => {
+                                if (row.kind === 'cargo' && row.line) {
+                                    const line = row.line;
+                                    return (
+                                        <button key={row.key} type="button"
+                                                className={`item-row${selectedCargo
+                                                    && selectedCargo.containerId === row.instance.id
+                                                    && selectedCargo.resourceId === line.resource_id ? ' selected' : ''}`}
+                                                onClick={() => onCargoClick(row.instance, line)}>
+                                            <span className="item-icon"><HangarIcon name={line.icon} size={22}/></span>
+                                            <span className="item-copy">
+                                                <strong>{line.name}</strong>
+                                                <span>{row.instance.name} · {locationLabel(row.instance)}</span>
+                                            </span>
+                                            <span className="item-meta">
+                                                <small>{formatNumber(line.amount_kg)} кг</small>
+                                                <b>{formatNumber(line.price_sale)} ¤/кг</b>
+                                            </span>
+                                        </button>
+                                    );
+                                }
+                                const instance = row.instance;
+                                return (
+                                    <button key={row.key} type="button"
+                                            className={`item-row${selectedInstanceId === instance.id ? ' selected' : ''}`}
+                                            onClick={() => instance.is_container
+                                                ? onContainerClick(instance)
+                                                : onInstanceClick(instance)}>
+                                        <span className="item-icon"><HangarIcon name={instance.icon} size={22}/></span>
+                                        <span className="item-copy">
+                                            <strong>{instance.name}</strong>
+                                            <span>{locationLabel(instance)}</span>
+                                        </span>
+                                        <span className="item-meta">
+                                            <small>{formatNumber(instance.mass)} кг</small>
+                                            {instance.is_container
+                                                && <b>{formatNumber(instance.used_kg)} / {formatNumber(instance.capacity_kg)} кг</b>}
+                                        </span>
+                                    </button>
+                                );
                     })}
                 </div>
             ))}
