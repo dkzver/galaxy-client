@@ -56,10 +56,10 @@ export default function CatalogPanel({
                     {(['all', 'equipment', 'resources'] as const).map((tab) => (
                         <button className={`tab${activeTab === tab ? ' active' : ''}`} key={tab}
                                 type="button" role="tab" aria-selected={activeTab === tab}
+                                aria-label={tabLabels[tab]}
                                 {...tipProps(tabLabels[tab])}
                                 onClick={() => onSelectTab(tab)}>
                             <HangarIcon name={TAB_ICONS[tab]} size={13}/>
-                            {tabLabels[tab]}
                         </button>
                     ))}
                 </div>

@@ -248,23 +248,26 @@
 
 .hangar-screen .catalog-body {
   flex: none;
-  display: flex; flex-direction: column; gap: 6px;
+  display: flex; flex-direction: row; align-items: center; gap: 6px;
   padding: 8px;
   overflow: visible;
 }
-.hangar-screen .category-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-.hangar-screen .category-tabs .tab { flex: 0 0 auto; min-width: 104px; }
+.hangar-screen .category-tabs { display: flex; gap: 6px; flex-wrap: nowrap; flex: 0 0 auto; }
+.hangar-screen .category-tabs .tab {
+  flex: 0 0 auto; width: 24px; min-width: 24px; padding: 0; justify-content: center;
+}
 .hangar-screen .catalog-category-list {
   display: grid;
   gap: 6px;
+  margin-left: auto; min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-right: 4px;
 }
 /* Категории идут одним рядом; при нехватке ширины список прокручивается. */
 .hangar-screen .catalog-category-row {
   display: flex;
   flex-wrap: nowrap;
+  justify-content: flex-end;
   gap: 5px;
 }
 .hangar-screen .catalog-category {
@@ -718,7 +721,7 @@
   .hangar-screen .map-link-label { display: none; }
   .hangar-screen .content { padding: 0 12px; }
   .hangar-screen .category-tabs { flex-wrap: nowrap; overflow-x: auto; }
-  .hangar-screen .category-tabs .tab { flex: 0 0 auto; min-width: 92px; }
+  .hangar-screen .category-tabs .tab { flex: 0 0 auto; width: 24px; min-width: 24px; }
   .hangar-screen .market-grid,.hangar-screen 
   .market-grid.no-cargo {
     grid-template-columns: minmax(0, 1fr);
