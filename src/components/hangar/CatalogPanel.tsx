@@ -26,13 +26,17 @@ export default function CatalogPanel({
     onShowTip,
     onHideTip,
 }: Props) {
-    // Категории идут рядами: оборудование сверху, ресурсы снизу.
-    const categoryRows: Array<{kind: 'equipment' | 'resources'; items: CatalogCategory[]; catalog: CatalogItem[]}> = [];
+    // Все группы в одном ряду: оборудование и ресурсы вместе.
+    const categories: Array<{category: CatalogCategory; items: CatalogItem[]}> = [];
     if (activeTab !== 'resources') {
-        categoryRows.push({kind: 'equipment', items: topCategories('equipment'), catalog: catalog.equipments});
+        for (const category of topCategories('equipment')) {
+            categories.push({category, items: catalog.equipments});
+        }
     }
     if (activeTab !== 'equipment') {
-        categoryRows.push({kind: 'resources', items: topCategories('resources'), catalog: catalog.resources});
+        for (const category of topCategories('resources')) {
+            categories.push({category, items: catalog.resources});
+        }
     }
 
     // Подсказка над кнопкой: только название и число позиций, без иконки.
@@ -60,31 +64,27 @@ export default function CatalogPanel({
                     ))}
                 </div>
                 <div className="catalog-category-list" role="group" aria-label="Категории каталога">
-                    {categoryRows.map((row, rowIndex) => (
-                        <div className="catalog-category-row" key={row.kind}>
-                            {rowIndex === 0 && (
-                                <button className={`tab catalog-category${activeCategory === null ? ' active' : ''}`}
-                                        type="button" onClick={onSelectAll}
-                                        aria-label="Все категории"
-                                        {...tipProps('Все категории')}>
-                                    <HangarIcon name="grid" size={13}/>
+                    <div className="catalog-category-row">
+                        <button className={`tab catalog-category${activeCategory === null ? ' active' : ''}`}
+                                type="button" onClick={onSelectAll}
+                                aria-label="Все категории"
+                                {...tipProps('Все категории')}>
+                            <HangarIcon name="grid" size={13}/>
+                        </button>
+                        {categories.map(({category, items}) => {
+                            const count = items.filter((item) => inCategoryGroup(item, category.id)).length;
+                            return (
+                                <button
+                                    className={`tab catalog-category${activeCategory === category.id ? ' active' : ''}`}
+                                    key={category.id} type="button"
+                                    aria-label={category.name}
+                                    {...tipProps(`${category.name} · ${count}`)}
+                                    onClick={() => onSelectCategory(category.id)}>
+                                    <HangarIcon name={category.icon} size={13}/>
                                 </button>
-                            )}
-                            {row.items.map((category) => {
-                                const count = row.catalog.filter((item) => inCategoryGroup(item, category.id)).length;
-                                return (
-                                    <button
-                                        className={`tab catalog-category${activeCategory === category.id ? ' active' : ''}`}
-                                        key={category.id} type="button"
-                                        aria-label={category.name}
-                                        {...tipProps(`${category.name} · ${count}`)}
-                                        onClick={() => onSelectCategory(category.id)}>
-                                        <HangarIcon name={category.icon} size={13}/>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    ))}
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </section>

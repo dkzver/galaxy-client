@@ -257,19 +257,15 @@
 .hangar-screen .catalog-category-list {
   display: grid;
   gap: 6px;
-  max-height: 78px;
-  overflow-y: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding-right: 4px;
 }
-/* Ряды категорий: оборудование сверху, ресурсы снизу. */
+/* Категории идут одним рядом; при нехватке ширины список прокручивается. */
 .hangar-screen .catalog-category-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 5px;
-}
-.hangar-screen .catalog-category-row + .catalog-category-row {
-  padding-top: 6px;
-  border-top: 1px dashed rgba(150, 190, 255, .12);
 }
 .hangar-screen .catalog-category {
   width: 24px; min-width: 24px; padding: 0; justify-content: center;
