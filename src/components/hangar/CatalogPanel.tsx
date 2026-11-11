@@ -47,7 +47,10 @@ export default function CatalogPanel({
                         <div className="catalog-category-row" key={row.kind}>
                             {rowIndex === 0 && (
                                 <button className={`tab catalog-category${activeCategory === null ? ' active' : ''}`}
-                                        type="button" onClick={onSelectAll}>Все</button>
+                                        type="button" onClick={onSelectAll}
+                                        title="Все категории" aria-label="Все категории">
+                                    <HangarIcon name="grid" size={13}/>
+                                </button>
                             )}
                             {row.items.map((category) => {
                                 const count = row.catalog.filter((item) => inCategoryGroup(item, category.id)).length;
@@ -55,10 +58,10 @@ export default function CatalogPanel({
                                     <button
                                         className={`tab catalog-category${activeCategory === category.id ? ' active' : ''}`}
                                         key={category.id} type="button"
+                                        title={`${category.name} · ${count}`}
+                                        aria-label={category.name}
                                         onClick={() => onSelectCategory(category.id)}>
                                         <HangarIcon name={category.icon} size={13}/>
-                                        <span className="catalog-category-copy"><span>{category.name}</span></span>
-                                        <small className="catalog-category-count">{count}</small>
                                     </button>
                                 );
                             })}

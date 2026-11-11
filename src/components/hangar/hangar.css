@@ -152,7 +152,7 @@
   color: var(--warning); border: 1px solid rgba(255, 215, 154, .35); border-radius: 4px;
   background: rgba(255, 215, 154, .05);
 }
-.hangar-screen #account small { text-transform: uppercase; color: var(--text-muted); font: 500 10px var(--mono); letter-spacing: .15em; }
+.hangar-screen #account small { text-transform: uppercase; color: var(--text-muted); font: 500 10px var(--mono); letter-spacing: .15em; text-align: right;}
 .hangar-screen #account strong { font: 600 18px var(--mono); margin-top: 2px; color: var(--text); }
 .hangar-screen #account i { color: var(--warning); font-style: normal; }
 
@@ -271,9 +271,9 @@
   padding-top: 6px;
   border-top: 1px dashed rgba(150, 190, 255, .12);
 }
-.hangar-screen .catalog-category { justify-content: flex-start; text-transform: none; letter-spacing: .02em; }
-.hangar-screen .catalog-category-copy { display: grid; gap: 2px; min-width: 0; text-align: left; }
-.hangar-screen .catalog-category-count { color: var(--text-muted); font: 10px var(--mono); }
+.hangar-screen .catalog-category {
+  width: 24px; min-width: 24px; padding: 0; justify-content: center;
+}
 
 /* ===== Сетка магазина ====================================================== */
 
