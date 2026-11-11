@@ -29,19 +29,19 @@ export default function HangarTopbar({credits, email, onLaunch, onAccount}: Prop
                 <span id="noticeShop">ТОРГОВЫЙ ТЕРМИНАЛ ПОДКЛЮЧЁН</span>
             </div>
             <div className="hangar-header-actions">
-                <div className="balance" data-action="add-credits" title="Начислить 1 000 ¤"
-                     role="button" tabIndex={0}>
+                <div id="account" title={`Аккаунт: ${email}`} role="button" tabIndex={0}
+                     onClick={onAccount}
+                     onKeyDown={(event) => {
+                         if (event.key !== 'Enter' && event.key !== ' ') return;
+                         event.preventDefault();
+                         onAccount();
+                     }}>
                     <span><HangarIcon name="credits" size={17}/></span>
                     <div>
                         <small>Баланс</small>
                         <strong id="creditsValue">{formatNumber(credits)} <i>¤</i></strong>
                     </div>
                 </div>
-                <button className="map-link hangar-account-link" type="button"
-                        onClick={onAccount} aria-label="Меню аккаунта"
-                        title={`Аккаунт: ${email}`}>
-                    <HangarIcon name="account" size={15}/><span className="map-link-label">АККАУНТ</span>
-                </button>
             </div>
         </header>
     );
